@@ -1,0 +1,392 @@
+// Prisma schema for VerifiedNyumba - House Hunting App
+// Using MongoDB as the database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for User roles and statuses
+enum UserRole {
+  TENANT
+  LANDLORD
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum ListingStatus {
+  ACTIVE
+  PAUSED
+  TAKEN
+  DELETED
+}
+
+enum PropertyType {
+  BEDSITTER
+  STUDIO
+  ONE_BEDROOM
+  TWO_BEDROOM
+  THREE_BEDROOM
+  FOUR_PLUS_BEDROOM
+}
+
+enum BuildingType {
+  APARTMENT
+  STANDALONE
+  MABATI
+  SERVANT_QUARTERS
+  BUNGALOW
+  MAISONETTE
+  TOWNHOUSE
+}
+
+enum WaterType {
+  BOREHOLE
+  COUNCIL
+  BOTH
+  NONE
+}
+
+enum ElectricityType {
+  TOKEN
+  POSTPAID
+  NONE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum ReportReason {
+  FAKE_LISTING
+  AGENT_PRETENDING
+  ALREADY_OCCUPIED
+  MISLEADING_PHOTOS
+  WRONG_PRICE
+  SCAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+// User model - supports tenants, landlords, and admins
+model User {
+  id                   String             @id @default(auto()) @map("_id") @db.ObjectId
+  email                String             @unique
+  phone                String             @unique
+  password             String
+  firstName            String
+  lastName             String
+  avatar               String?
+  role                 UserRole           @default(TENANT)
+  
+  // Email and phone verification
+  emailVerified        Boolean            @default(false)
+  phoneVerified        Boolean            @default(false)
+  
+  // Landlord verification (only for landlords)
+  verificationStatus   VerificationStatus @default(PENDING)
+  verificationDocs     VerificationDoc[]
+  verificationNote     String?
+  verifiedAt           DateTime?
+  
+  // Refresh tokens for JWT
+  refreshTokens        RefreshToken[]
+  
+  // Relationships
+  listings             Listing[]
+  savedListings        SavedListing[]
+  chatsAsTenant        Conversation[]     @relation("TenantChats")
+  chatsAsLandlord      Conversation[]     @relation("LandlordChats")
+  messagesSent         Message[]
+  reviewsGiven         Review[]           @relation("ReviewsGiven")
+  reviewsReceived      Review[]           @relation("ReviewsReceived")
+  reports              Report[]
+  viewingBookings      ViewingBooking[]
+  
+  // Timestamps
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  lastLoginAt          DateTime?
+  
+  // Settings
+  showOnlyDirectListings Boolean          @default(false)  // No-agent mode
+  
+  @@map("users")
+}
+
+// Verification documents for landlords
+model VerificationDoc {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // ID, TITLE_DEED, UTILITY_BILL, CARETAKER_LETTER
+  url         String
+  publicId    String   // Cloudinary public ID
+  uploadedAt  DateTime @default(now())
+  
+  @@map("verification_docs")
+}
+
+// Refresh tokens for JWT authentication
+model RefreshToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("refresh_tokens")
+}
+
+// Property Listing
+model Listing {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  landlordId      String        @db.ObjectId
+  landlord        User          @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  
+  // Basic info
+  title           String
+  description     String
+  status          ListingStatus @default(ACTIVE)
+  
+  // Location details
+  area            String        // e.g., Kasarani, Rongai, Ruaka
+  estate          String?       // Estate name
+  landmark        String?       // Near stage, mall, school
+  address         String?
+  
+  // Coordinates for map
+  latitude        Float?
+  longitude       Float?
+  
+  // Distance info (in km)
+  distanceToCBD   Float?
+  distanceToStage Float?
+  
+  // Property details
+  propertyType    PropertyType
+  buildingType    BuildingType
+  bedrooms        Int           @default(1)
+  bathrooms       Int           @default(1)
+  
+  // Pricing (KES) - Full transparency
+  monthlyRent     Int
+  deposit         Int
+  serviceCharge   Int           @default(0)
+  waterCharge     Int           @default(0)
+  garbageCharge   Int           @default(0)
+  
+  // Kenya-specific features
+  waterType       WaterType     @default(COUNCIL)
+  electricityType ElectricityType @default(TOKEN)
+  parking         Boolean       @default(false)
+  parkingSpaces   Int           @default(0)
+  petsAllowed     Boolean       @default(false)
+  familyFriendly  Boolean       @default(true)
+  bachelorFriendly Boolean      @default(true)
+  gatedCommunity  Boolean       @default(false)
+  furnished       Boolean       @default(false)
+  
+  // Amenities (stored as array)
+  amenities       String[]      @default([])
+  
+  // Media
+  photos          ListingPhoto[]
+  videoUrl        String?
+  
+  // Verification
+  photosVerifiedAt DateTime?
+  
+  // Rent payment options
+  dailyRentAvailable  Boolean   @default(false)
+  weeklyRentAvailable Boolean   @default(false)
+  dailyRent           Int?
+  weeklyRent          Int?
+  
+  // Analytics
+  viewCount       Int           @default(0)
+  
+  // Relationships
+  savedBy         SavedListing[]
+  conversations   Conversation[]
+  reviews         Review[]
+  reports         Report[]
+  viewingSlots    ViewingSlot[]
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([area])
+  @@index([propertyType])
+  @@index([monthlyRent])
+  @@index([status])
+  @@map("listings")
+}
+
+// Listing photos with watermarking support
+model ListingPhoto {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  listingId   String   @db.ObjectId
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url         String
+  publicId    String   // Cloudinary public ID
+  order       Int      @default(0)
+  isMain      Boolean  @default(false)
+  uploadedAt  DateTime @default(now())
+  
+  @@map("listing_photos")
+}
+
+// Saved/Favorited listings
+model SavedListing {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String   @db.ObjectId
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  savedAt   DateTime @default(now())
+  
+  @@unique([userId, listingId])
+  @@map("saved_listings")
+}
+
+// Chat Conversation
+model Conversation {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String    @db.ObjectId
+  tenant        User      @relation("TenantChats", fields: [tenantId], references: [id], onDelete: Cascade)
+  landlordId    String    @db.ObjectId
+  landlord      User      @relation("LandlordChats", fields: [landlordId], references: [id], onDelete: Cascade)
+  listingId     String    @db.ObjectId
+  listing       Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  // Phone reveal - both parties must agree
+  tenantRevealed   Boolean @default(false)
+  landlordRevealed Boolean @default(false)
+  
+  messages      Message[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([tenantId, landlordId, listingId])
+  @@map("conversations")
+}
+
+// Chat Message
+model Message {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @db.ObjectId
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  isPreFilled    Boolean      @default(false) // For pre-filled questions
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// Viewing time slots set by landlord
+model ViewingSlot {
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  listingId  String           @db.ObjectId
+  listing    Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int              // 0 = Sunday, 6 = Saturday
+  startTime  String           // HH:MM format
+  endTime    String           // HH:MM format
+  isActive   Boolean          @default(true)
+  bookings   ViewingBooking[]
+  
+  @@map("viewing_slots")
+}
+
+// Viewing booking by tenant
+model ViewingBooking {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  slotId       String        @db.ObjectId
+  slot         ViewingSlot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  tenantId     String        @db.ObjectId
+  tenant       User          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  date         DateTime      // Specific date of viewing
+  status       BookingStatus @default(PENDING)
+  reminderSent Boolean       @default(false)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@map("viewing_bookings")
+}
+
+// Review and Rating
+model Review {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  reviewerId      String   @db.ObjectId
+  reviewer        User     @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  targetUserId    String   @db.ObjectId
+  targetUser      User     @relation("ReviewsReceived", fields: [targetUserId], references: [id], onDelete: Cascade)
+  listingId       String?  @db.ObjectId
+  listing         Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  
+  // Ratings (1-5)
+  accuracyRating     Int
+  responsivenessRating Int
+  overallRating      Int
+  
+  comment         String?
+  createdAt       DateTime @default(now())
+  
+  @@map("reviews")
+}
+
+// Report for fake/scam listings
+model Report {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  reporterId  String       @db.ObjectId
+  reporter    User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  listingId   String       @db.ObjectId
+  listing     Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reason      ReportReason
+  description String?
+  evidence    String[]     @default([]) // URLs to evidence images
+  status      ReportStatus @default(PENDING)
+  resolvedAt  DateTime?
+  resolvedBy  String?      @db.ObjectId
+  resolution  String?
+  createdAt   DateTime     @default(now())
+  
+  @@map("reports")
+}
+
+// Newsletter subscription
+model Newsletter {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  createdAt DateTime @default(now())
+  
+  @@map("newsletters")
+}
