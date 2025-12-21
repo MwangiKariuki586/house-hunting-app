@@ -22,7 +22,6 @@ export const metadata: Metadata = {
     "apartment for rent",
   ],
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
