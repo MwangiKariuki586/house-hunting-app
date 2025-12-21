@@ -185,3 +185,5 @@ async function checkScamPatterns(listingId: string) {
   }
 }
 
+
+

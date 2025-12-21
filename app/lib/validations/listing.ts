@@ -166,3 +166,5 @@ export const amenitiesList = [
   'Solar Panels',
 ]
 
+
+

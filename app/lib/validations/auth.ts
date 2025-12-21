@@ -69,3 +69,5 @@ export function formatKenyanPhone(phone: string): string {
   return `+254${cleaned}`
 }
 
+
+
