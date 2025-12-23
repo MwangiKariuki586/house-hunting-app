@@ -13,7 +13,8 @@ import {
   clearAuthCookies,
 } from '@/app/lib/auth'
 
-export async function POST(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function POST(_request: NextRequest) {
   try {
     const cookieStore = await cookies()
     const refreshToken = cookieStore.get('refreshToken')?.value

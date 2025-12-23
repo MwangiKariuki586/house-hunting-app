@@ -4,7 +4,6 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Filter,
   X,
   Loader2,
   Grid,

@@ -1,4 +1,15 @@
-// Location Picker component for selecting property location
+/**
+ * Location Picker component for selecting property location
+ * 
+ * This component uses Leaflet for map functionality with a location search feature
+ * using OpenStreetMap's Nominatim geocoding service.
+ * 
+ * NOTE: We use dynamic imports for react-leaflet because Leaflet requires the 
+ * window object which is not available during SSR. The generic Record<string, unknown>
+ * types are used because the react-leaflet types are complex and the dynamic import
+ * pattern makes TypeScript inference difficult. This is a common pattern in Next.js
+ * applications using Leaflet.
+ */
 "use client";
 
 import * as React from "react";
@@ -7,12 +18,27 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 
 interface LocationPickerProps {
+  /** Current location value (lat/lng coordinates) */
   value?: { lat: number; lng: number } | null;
+  /** Callback when location changes */
   onChange: (location: { lat: number; lng: number } | null) => void;
+  /** Additional CSS classes for the container */
   className?: string;
 }
 
-// Nairobi coordinates
+/**
+ * Type definition for dynamically imported Leaflet components.
+ * Using Record<string, unknown> because the actual react-leaflet types
+ * are not compatible with dynamic component typing in this pattern.
+ */
+interface LeafletComponents {
+  MapContainer: React.ComponentType<Record<string, unknown>>;
+  TileLayer: React.ComponentType<Record<string, unknown>>;
+  Marker: React.ComponentType<Record<string, unknown>>;
+  useMapEvents: (handlers: Record<string, unknown>) => unknown;
+}
+
+// Default center: Nairobi, Kenya (-1.2921°S, 36.8219°E)
 const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219];
 
 export function LocationPicker({
@@ -21,12 +47,8 @@ export function LocationPicker({
   className,
 }: LocationPickerProps) {
   const [isMounted, setIsMounted] = React.useState(false);
-  const [MapComponents, setMapComponents] = React.useState<{
-    MapContainer: React.ComponentType<Record<string, unknown>>;
-    TileLayer: React.ComponentType<Record<string, unknown>>;
-    Marker: React.ComponentType<Record<string, unknown>>;
-    useMapEvents: (handlers: Record<string, unknown>) => unknown;
-  } | null>(null);
+  const [MapComponents, setMapComponents] =
+    React.useState<LeafletComponents | null>(null);
   const [position, setPosition] = React.useState<[number, number] | null>(
     value ? [value.lat, value.lng] : null
   );
@@ -122,8 +144,7 @@ export function LocationPicker({
   if (!isMounted || !MapComponents) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}
-        style={{ minHeight: "300px" }}
+        className={`flex items-center justify-center bg-gray-100 rounded-lg min-h-[300px] ${className}`}
       >
         <p className="text-gray-500">Loading map...</p>
       </div>
@@ -167,13 +188,12 @@ export function LocationPicker({
 
       {/* Map */}
       <div
-        className="relative overflow-hidden rounded-lg border border-gray-200"
-        style={{ height: "300px" }}
+        className="relative overflow-hidden rounded-lg border border-gray-200 h-[300px]"
       >
         <MapContainer
           center={position || NAIROBI_CENTER}
           zoom={position ? 15 : 12}
-          style={{ height: "100%", width: "100%" }}
+          className="h-full w-full"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

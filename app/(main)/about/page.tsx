@@ -3,12 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgeCheck,
-  Users,
   Building2,
   Target,
   Heart,
   Shield,
-  MapPin,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
@@ -117,7 +115,7 @@ export default function AboutPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative min-h-[500px] overflow-hidden">
+      <section className="relative min-h-[700px] overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920"
@@ -129,16 +127,19 @@ export default function AboutPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
         </div>
 
-        <div className="container relative mx-auto px-4 py-32">
+        <div className="container relative mx-auto px-4 py-32 lg:py-40">
           <div className="max-w-2xl">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
-              About Us
-            </p>
-            <h1 className="mb-6 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
+              <Building2 className="h-4 w-4 text-[#D4A373]" />
+              <span className="text-sm font-medium">About Us</span>
+            </div>
+
+            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               Helping You Find{" "}
               <span className="text-[#D4A373]">a Place to Belong</span>
             </h1>
-            <p className="text-lg text-gray-200">
+
+            <p className="text-lg text-gray-200 md:text-xl">
               We&apos;re on a mission to transform Kenya&apos;s rental market by
               connecting tenants directly with verified landlords.
             </p>

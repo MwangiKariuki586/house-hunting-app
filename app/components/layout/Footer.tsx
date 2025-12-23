@@ -13,7 +13,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";

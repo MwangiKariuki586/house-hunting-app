@@ -10,8 +10,6 @@ import { Badge } from "@/app/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/app/components/ui/card";
 import {
   Tabs,
@@ -19,7 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/app/components/ui/tabs";
-import { formatDate, formatPrice } from "@/app/lib/utils";
+import { formatDate } from "@/app/lib/utils";
 
 interface Booking {
   id: string;

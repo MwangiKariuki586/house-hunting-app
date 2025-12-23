@@ -8,7 +8,7 @@ import { createListingSchema, listingFilterSchema } from '@/app/lib/validations/
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     // Parse filters
     const filters = listingFilterSchema.parse({
       area: searchParams.get('area') || undefined,
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get listings error:', error)
     return NextResponse.json(
-      { error: 'An error occurred' },
+      { error: 'Failed to fetch listings', code: 'LISTINGS_FETCH_ERROR' },
       { status: 500 }
     )
   }
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create listing error:', error)
     return NextResponse.json(
-      { error: 'An error occurred' },
+      { error: 'Failed to create listing', code: 'LISTING_CREATE_ERROR' },
       { status: 500 }
     )
   }

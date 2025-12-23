@@ -35,9 +35,9 @@ import { cn, getInitials } from "@/app/lib/utils";
 // Navigation links
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About us" },
   { href: "/properties", label: "Properties" },
-  { href: "/services", label: "Services" },
+  { href: "/for-landlords", label: "For Landlords" },
+  { href: "/about", label: "About" },
 ];
 
 interface User {
@@ -222,7 +222,7 @@ export function Header({ user }: HeaderProps) {
                     Log in
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/contact">
                   <Button
                     variant="accent"
                     className="shadow-lg shadow-[#1B4D3E]/25"

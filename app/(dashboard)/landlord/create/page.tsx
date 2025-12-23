@@ -3,8 +3,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Upload,
   X,
@@ -43,7 +43,6 @@ import {
 } from "@/app/lib/utils";
 import {
   createListingSchema,
-  type CreateListingInput,
   kenyanAreas,
   amenitiesList,
 } from "@/app/lib/validations/listing";
@@ -900,10 +899,11 @@ export default function CreateListingPage() {
                         )}
                         onClick={() => setMainPhoto(photo.publicId)}
                       >
-                        <img
+                        <Image
                           src={photo.url}
                           alt="Property"
-                          className="h-full w-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                         {photo.isMain && (
                           <div className="absolute left-2 top-2 rounded bg-teal-600 px-2 py-0.5 text-xs font-medium text-white">

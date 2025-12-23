@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
     await setAuthCookies(accessToken, refreshToken)
 
     // Return user data (excluding password)
-    const { password: _, ...userWithoutPassword } = user
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...userWithoutPassword } = user
 
     return NextResponse.json({
       message: 'Login successful',

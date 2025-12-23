@@ -12,7 +12,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/app/components/ui/avatar";
-import { Badge } from "@/app/components/ui/badge";
 import {
   cn,
   formatPrice,

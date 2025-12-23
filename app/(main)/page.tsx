@@ -2,154 +2,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Building2,
-  Key,
-  TrendingUp,
   BadgeCheck,
   Users,
   MapPin,
   Phone,
   ArrowRight,
   Play,
-  Star,
   Sparkles,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { PropertyCard } from "@/app/components/cards/PropertyCard";
 
-// Placeholder featured properties
-const featuredProperties = [
-  {
-    id: "1",
-    title: "Luxury Modern Villa",
-    area: "Westlands",
-    estate: "Brookside Grove",
-    propertyType: "THREE_BEDROOM",
-    monthlyRent: 175000,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 2500,
-    parking: true,
-    parkingSpaces: 2,
-    photos: [
-      {
-        url: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
-        isMain: true,
-      },
-    ],
-    isVerifiedLandlord: true,
-  },
-  {
-    id: "2",
-    title: "Cozy Lakeside Cabin",
-    area: "Karen",
-    estate: "Langata Road",
-    propertyType: "TWO_BEDROOM",
-    monthlyRent: 95000,
-    bedrooms: 2,
-    bathrooms: 2,
-    sqft: 1800,
-    parking: true,
-    parkingSpaces: 1,
-    photos: [
-      {
-        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
-        isMain: true,
-      },
-    ],
-    isVerifiedLandlord: true,
-  },
-  {
-    id: "3",
-    title: "Scandinavian Loft Home",
-    area: "Kilimani",
-    estate: "Rose Avenue",
-    propertyType: "ONE_BEDROOM",
-    monthlyRent: 65000,
-    bedrooms: 1,
-    bathrooms: 1,
-    sqft: 950,
-    parking: true,
-    photos: [
-      {
-        url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
-        isMain: true,
-      },
-    ],
-    isVerifiedLandlord: false,
-  },
-  {
-    id: "4",
-    title: "Smart Ridge House",
-    area: "Lavington",
-    estate: "Valley Arcade",
-    propertyType: "FOUR_PLUS_BEDROOM",
-    monthlyRent: 250000,
-    bedrooms: 4,
-    bathrooms: 3,
-    sqft: 3200,
-    parking: true,
-    parkingSpaces: 3,
-    photos: [
-      {
-        url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800",
-        isMain: true,
-      },
-    ],
-    isVerifiedLandlord: true,
-  },
-];
-
-const services = [
-  {
-    icon: Key,
-    title: "Property Rentals",
-    description:
-      "We offer an extensive selection of rental properties, including furnished and unfurnished options, across prime Nairobi locations.",
-  },
-  {
-    icon: Building2,
-    title: "Property Management",
-    description:
-      "VerifiedNyumba offers comprehensive property management services to take the stress out of landlord duties.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Investment Advice",
-    description:
-      "The Kenyan real estate market offers numerous opportunities. Get expert advice on where and when to invest.",
-  },
-];
-
-const stats = [
-  { value: "200+", label: "Properties Listed" },
-  { value: "500+", label: "Happy Tenants" },
-  { value: "50+", label: "Verified Landlords" },
-  { value: "4.9", label: "Average Rating", icon: Star },
-];
-
-const whyChooseUs = [
-  {
-    title: "Verified Listings",
-    description:
-      "Every landlord is verified with ID and property ownership proof. No fake listings.",
-  },
-  {
-    title: "No Agent Fees",
-    description:
-      "Connect directly with property owners. No middlemen, no surprise commissions.",
-  },
-  {
-    title: "Local Expertise",
-    description:
-      "Deep knowledge of Nairobi neighborhoods, from Westlands to Kilimani to Karen.",
-  },
-  {
-    title: "Client First",
-    description:
-      "Our dedicated team ensures you find the perfect home that matches your needs.",
-  },
-];
+// Import data from centralized data files
+import {
+  featuredProperties,
+  services,
+  stats,
+  whyChooseUs,
+} from "@/app/lib/data";
 
 export default function HomePage() {
   return (
@@ -199,14 +70,14 @@ export default function HomePage() {
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
-              <Button
+              {/* <Button
                 size="xl"
                 variant="outline"
                 className="gap-2 border-white text-white hover:bg-white/10"
               >
                 <Play className="h-5 w-5" />
                 Watch Video
-              </Button>
+              </Button> */}
             </div>
 
             {/* Quick Stats */}
@@ -313,73 +184,200 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why Choose Us Section */}
+      {/* Why Choose Us - Two-Column Layout for Tenants & Landlords */}
       <section className="py-20 lg:py-28">
         <div className="container mx-auto px-4">
-          <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-            {/* Left - Image */}
-            <div className="relative">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
-                  alt="Modern interior"
-                  fill
-                  className="object-cover"
-                />
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
+              Why Choose Us
+            </p>
+            <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
+              Built for <span className="text-[#1B4D3E]">Everyone</span>
+            </h2>
+            <p className="mt-4 mx-auto max-w-2xl text-gray-600">
+              Whether you&apos;re searching for your next home or looking to
+              list your property, VerifiedNyumba has you covered.
+            </p>
+          </div>
+
+          {/* Two-Column Grid */}
+          <div className="grid gap-8 lg:grid-cols-2">
+            {/* For Tenants Column */}
+            <div className="flex flex-col rounded-3xl border border-gray-200 bg-white p-8 lg:p-10">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#1B4D3E]/10 px-4 py-2 self-start">
+                <Users className="h-4 w-4 text-[#1B4D3E]" />
+                <span className="text-sm font-medium text-[#1B4D3E]">
+                  For Tenants
+                </span>
               </div>
-              {/* Floating Stats Card */}
-              <div className="absolute -bottom-8 -right-8 rounded-2xl bg-white p-6 shadow-xl lg:-right-12">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1B4D3E]">
-                    <Users className="h-7 w-7 text-white" />
+
+              <h3 className="mb-4 text-2xl font-bold text-gray-900">
+                Find Your Perfect Home
+              </h3>
+              <p className="mb-8 text-gray-600">
+                Browse verified properties, connect directly with landlords, and
+                skip the agent fees.
+              </p>
+
+              <div className="flex-1 space-y-5">
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B4D3E]/10">
+                    <BadgeCheck className="h-5 w-5 text-[#1B4D3E]" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">500+</p>
-                    <p className="text-sm text-gray-500">Happy Clients</p>
+                    <h4 className="font-semibold text-gray-900">
+                      Verified Listings
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Every property is verified for authenticity and accuracy.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B4D3E]/10">
+                    <BadgeCheck className="h-5 w-5 text-[#1B4D3E]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      No Agent Fees
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Connect directly with landlords. No middlemen required.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B4D3E]/10">
+                    <BadgeCheck className="h-5 w-5 text-[#1B4D3E]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Local Expertise
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Deep knowledge of Nairobi neighborhoods and pricing.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B4D3E]/10">
+                    <BadgeCheck className="h-5 w-5 text-[#1B4D3E]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Client First
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Dedicated support to help you find your perfect home.
+                    </p>
                   </div>
                 </div>
               </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/properties">
+                  <Button size="lg" className="gap-2">
+                    Browse Properties
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/about">
+                  <Button size="lg" variant="outline">
+                    Learn More
+                  </Button>
+                </Link>
+              </div>
             </div>
 
-            {/* Right - Content */}
-            <div>
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
-                About Us
-              </p>
-              <h2 className="mb-6 text-3xl font-bold text-gray-900 md:text-4xl">
-                Why Choose{" "}
-                <span className="text-[#1B4D3E]">VerifiedNyumba</span>
-              </h2>
-              <p className="mb-8 text-gray-600 leading-relaxed">
-                We&apos;re not just another property listing site. We&apos;re
-                building trust in Kenya&apos;s rental market by connecting
-                tenants directly with verified landlords. No agents, no scams,
-                just genuine homes.
-              </p>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                {whyChooseUs.map((item) => (
-                  <div key={item.title} className="flex gap-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B4D3E]/10">
-                      <BadgeCheck className="h-5 w-5 text-[#1B4D3E]" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        {item.title}
-                      </h4>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            {/* For Landlords Column */}
+            <div className="flex flex-col rounded-3xl border border-gray-200 bg-[#F9FAFB] p-8 lg:p-10">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#D4A373]/10 px-4 py-2 self-start">
+                <Building2 className="h-4 w-4 text-[#D4A373]" />
+                <span className="text-sm font-medium text-[#D4A373]">
+                  For Landlords
+                </span>
               </div>
 
-              <div className="mt-10">
-                <Link href="/about">
-                  <Button size="lg" className="gap-2">
-                    Learn More About Us
+              <h3 className="mb-4 text-2xl font-bold text-gray-900">
+                List & Earn More
+              </h3>
+              <p className="mb-8 text-gray-600">
+                Connect directly with quality tenants, manage your listings with
+                ease, and keep 100% of your rental income.
+              </p>
+
+              <div className="flex-1 space-y-5">
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/10">
+                    <BadgeCheck className="h-5 w-5 text-[#D4A373]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Verified Badge
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Stand out with a trust badge that attracts quality tenants.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/10">
+                    <Users className="h-5 w-5 text-[#D4A373]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Direct Connections
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Chat directly with tenants. No middlemen, no agent fees.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/10">
+                    <MapPin className="h-5 w-5 text-[#D4A373]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Easy Scheduling
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Built-in viewing slots. Tenants book, you approve.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/10">
+                    <Sparkles className="h-5 w-5 text-[#D4A373]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Listing Analytics
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Track views, inquiries, and bookings in real-time.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/register?role=LANDLORD">
+                  <Button size="lg" variant="accent" className="gap-2">
+                    List Your Property
                     <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/for-landlords">
+                  <Button size="lg" variant="outline">
+                    Learn More
                   </Button>
                 </Link>
               </div>
@@ -389,41 +387,41 @@ export default function HomePage() {
       </section>
 
       {/* Featured Property Banner */}
-      <section className="py-20 lg:py-28 bg-[#1B4D3E]">
+      <section className="py-20 lg:py-28 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             {/* Left - Content */}
-            <div className="text-white">
+            <div>
               <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
                 Featured Property
               </p>
-              <h2 className="mb-6 text-3xl font-bold md:text-4xl">
+              <h2 className="mb-6 text-3xl font-bold text-gray-900 md:text-4xl">
                 Scandinavian Loft Home
               </h2>
-              <p className="mb-6 text-gray-300 leading-relaxed">
+              <p className="mb-6 text-gray-600 leading-relaxed">
                 Experience modern living in this beautifully designed loft
                 apartment featuring floor-to-ceiling windows, premium finishes,
                 and a private balcony overlooking the city.
               </p>
 
-              <div className="mb-8 flex items-center gap-6">
+              <div className="mb-8 flex items-center gap-6 text-gray-700">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-[#D4A373]" />
+                  <MapPin className="h-5 w-5 text-[#1B4D3E]" />
                   <span>Kilimani, Nairobi</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-[#D4A373]" />
+                  <Phone className="h-5 w-5 text-[#1B4D3E]" />
                   <span>+254 700 000 000</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-3xl font-bold">KES 65,000</p>
-                  <p className="text-sm text-gray-400">per month</p>
+                  <p className="text-3xl font-bold text-gray-900">KES 65,000</p>
+                  <p className="text-sm text-gray-500">per month</p>
                 </div>
                 <Link href="/properties/3">
-                  <Button variant="accent" size="lg" className="gap-2">
+                  <Button size="lg" className="gap-2">
                     Explore Home
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -445,41 +443,27 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 lg:py-28">
+      <section className="py-20 lg:py-28 bg-white">
         <div className="container mx-auto px-4">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1B4D3E] to-[#2D6A4F] p-12 lg:p-20">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-pattern" />
-            </div>
-
-            <div className="relative text-center">
-              <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">
-                Are you a landlord?
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-[#F9FAFB] p-12 lg:p-20">
+            <div className="text-center">
+              <h2 className="mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
+                Ready to get started?
               </h2>
-              <p className="mx-auto mb-8 max-w-2xl text-gray-200">
-                List your property directly with us and connect with verified
-                tenants. No agent fees, full control over your listings, and
-                analytics to track performance.
+              <p className="mx-auto mb-8 max-w-2xl text-gray-600">
+                Whether you&apos;re looking for your next home or want to list
+                your property, VerifiedNyumba makes it easy.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href="/register?role=LANDLORD">
-                  <Button
-                    size="lg"
-                    variant="accent"
-                    className="gap-2 shadow-xl"
-                  >
-                    List Your Property
+                <Link href="/properties">
+                  <Button size="lg" className="gap-2">
+                    Browse Properties
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/about">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white text-white hover:bg-white/10"
-                  >
-                    Learn More
+                <Link href="/register?role=LANDLORD">
+                  <Button size="lg" variant="outline">
+                    List Your Property
                   </Button>
                 </Link>
               </div>
@@ -490,5 +474,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-

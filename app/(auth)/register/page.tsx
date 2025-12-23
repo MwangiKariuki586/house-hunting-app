@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, UserPlus, Home, Building2 } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Home, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {
@@ -20,7 +20,11 @@ import {
 import { cn } from "@/app/lib/utils";
 import { registerSchema, type RegisterInput } from "@/app/lib/validations/auth";
 
-export default function RegisterPage() {
+/**
+ * Inner registration form component that uses useSearchParams
+ * Must be wrapped in Suspense boundary
+ */
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultRole =
@@ -245,5 +249,33 @@ export default function RegisterPage() {
   );
 }
 
+/**
+ * Loading fallback for Suspense boundary
+ */
+function RegisterFormSkeleton() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Create an account</CardTitle>
+        <CardDescription>
+          Join VerifiedNyumba and find your dream home
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </CardContent>
+    </Card>
+  );
+}
 
-
+/**
+ * Main register page component
+ * Wraps the form in Suspense to handle useSearchParams during static generation
+ */
+export default function RegisterPage() {
+  return (
+    <React.Suspense fallback={<RegisterFormSkeleton />}>
+      <RegisterForm />
+    </React.Suspense>
+  );
+}

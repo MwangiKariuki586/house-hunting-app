@@ -1,10 +1,28 @@
-// Map View component using Leaflet for VerifiedNyumba
+/**
+ * Map View Component
+ * 
+ * A reusable map component using Leaflet to display property locations on a map.
+ * Supports both single marker display and multiple markers with click handlers.
+ * 
+ * NOTE: This component uses dynamic imports with `next/dynamic` to avoid SSR 
+ * issues since Leaflet requires the browser's window object. The map will
+ * show a loading state during server-side rendering.
+ * 
+ * @example Single marker (property detail page)
+ * <MapView center={[-1.29, 36.82]} singleMarker />
+ * 
+ * @example Multiple markers (search results)
+ * <MapView markers={properties} onMarkerClick={(id) => selectProperty(id)} />
+ */
 "use client";
 
 import * as React from "react";
 import dynamic from "next/dynamic";
 
-// Dynamically import Leaflet components to avoid SSR issues
+/**
+ * Dynamic imports for Leaflet components
+ * SSR is disabled because Leaflet requires the window object
+ */
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
   { ssr: false }
@@ -24,27 +42,39 @@ const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
   ssr: false,
 });
 
-// Import Leaflet CSS
+// Import Leaflet CSS for proper map styling
 import "leaflet/dist/leaflet.css";
 
+/** Map marker data structure */
 interface MapMarker {
+  /** Unique identifier for the marker */
   id: string;
+  /** Latitude coordinate */
   lat: number;
+  /** Longitude coordinate */
   lng: number;
+  /** Display title in popup */
   title: string;
+  /** Optional price to display in popup (in KES) */
   price?: number;
 }
 
 interface MapViewProps {
+  /** Map center coordinates [lat, lng]. Defaults to Nairobi center. */
   center?: [number, number];
+  /** Initial zoom level (1-18). Defaults to 12. */
   zoom?: number;
+  /** Array of markers to display on the map */
   markers?: MapMarker[];
+  /** Callback when a marker is clicked */
   onMarkerClick?: (id: string) => void;
+  /** Additional CSS classes for the map container */
   className?: string;
+  /** If true, shows a single marker at the center position (for property details) */
   singleMarker?: boolean;
 }
 
-// Default center: Nairobi, Kenya
+// Default center: Nairobi Central Business District
 const DEFAULT_CENTER: [number, number] = [-1.2921, 36.8219];
 const DEFAULT_ZOOM = 12;
 
@@ -61,17 +91,22 @@ export function MapView({
   React.useEffect(() => {
     setIsMounted(true);
 
-    // Fix Leaflet default icon issue
-    const L = require("leaflet");
-    delete (L.Icon.Default.prototype as { _getIconUrl?: () => string })
-      ._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-      iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-      shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+    /**
+     * Fix Leaflet default icon issue
+     * Leaflet's default icon URLs are broken when bundled with webpack.
+     * We need to manually configure the icon URLs.
+     */
+    import("leaflet").then((L) => {
+      delete (L.default.Icon.Default.prototype as { _getIconUrl?: () => string })
+        ._getIconUrl;
+      L.default.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+        iconUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+        shadowUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+      });
     });
   }, []);
 
@@ -89,8 +124,7 @@ export function MapView({
     <MapContainer
       center={center}
       zoom={zoom}
-      className={className}
-      style={{ height: "100%", width: "100%", minHeight: "300px" }}
+      className={`h-full w-full min-h-[300px] ${className || ""}`}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

@@ -12,7 +12,8 @@ const Checkbox = React.forwardRef<
     label?: string;
   }
 >(({ className, label, id, ...props }, ref) => {
-  const checkboxId = id || React.useId();
+  const generatedId = React.useId();
+  const checkboxId = id || generatedId;
 
   return (
     <div className="flex items-center space-x-2">
