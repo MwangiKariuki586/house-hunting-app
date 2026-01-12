@@ -10,6 +10,8 @@ import {
   List,
   SlidersHorizontal,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -58,6 +60,9 @@ export default function PropertiesPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [showFilters, setShowFilters] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = React.useState(
+    searchParams.get("page") ? Number(searchParams.get("page")) : 1
+  );
 
   // Filter states
   const [area, setArea] = React.useState(searchParams.get("area") || "");
@@ -109,6 +114,7 @@ export default function PropertiesPage() {
       if (furnished) params.set("furnished", "true");
       if (gatedCommunity) params.set("gatedCommunity", "true");
       params.set("sortBy", sortBy);
+      params.set("page", currentPage.toString());
 
       const res = await fetch(`/api/listings?${params.toString()}`);
       if (res.ok) {
@@ -133,11 +139,17 @@ export default function PropertiesPage() {
     furnished,
     gatedCommunity,
     sortBy,
+    currentPage,
   ]);
 
   React.useEffect(() => {
     fetchListings();
   }, [fetchListings]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [area, propertyType, buildingType, minPrice, maxPrice, verifiedOnly, parking, petsAllowed, furnished, gatedCommunity, sortBy]);
 
   const applyFilters = () => {
     const params = new URLSearchParams();
@@ -209,22 +221,23 @@ export default function PropertiesPage() {
                 variant={sortBy === "newest" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setSortBy("newest")}
+                className={sortBy === "newest" ? "text-white" : ""}
               >
                 Hot Deals
               </Button>
               <Button
-                variant={sortBy === "price_asc" ? "default" : "ghost"}
+                variant={sortBy === "price_low" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setSortBy("price_asc")}
-                className="text-gray-600"
+                onClick={() => setSortBy("price_low")}
+                className={sortBy === "price_low" ? "text-white" : "text-gray-600"}
               >
                 Price ↑
               </Button>
               <Button
-                variant={sortBy === "price_desc" ? "default" : "ghost"}
+                variant={sortBy === "price_high" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setSortBy("price_desc")}
-                className="text-gray-600"
+                onClick={() => setSortBy("price_high")}
+                className={sortBy === "price_high" ? "text-white" : "text-gray-600"}
               >
                 Price ↓
               </Button>
@@ -256,12 +269,12 @@ export default function PropertiesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location
                   </label>
-                  <Select value={area} onValueChange={setArea}>
+                  <Select value={area || "all"} onValueChange={(val) => setArea(val === "all" ? "" : val)}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="All areas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All areas</SelectItem>
+                      <SelectItem value="all">All areas</SelectItem>
                       {kenyanAreas.map((a) => (
                         <SelectItem key={a} value={a}>
                           {a}
@@ -276,12 +289,12 @@ export default function PropertiesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Property Type
                   </label>
-                  <Select value={propertyType} onValueChange={setPropertyType}>
+                  <Select value={propertyType || "all"} onValueChange={(val) => setPropertyType(val === "all" ? "" : val)}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All types</SelectItem>
+                      <SelectItem value="all">All types</SelectItem>
                       {Object.entries(propertyTypeLabels).map(
                         ([value, label]) => (
                           <SelectItem key={value} value={value}>
@@ -298,12 +311,12 @@ export default function PropertiesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Building Type
                   </label>
-                  <Select value={buildingType} onValueChange={setBuildingType}>
+                  <Select value={buildingType || "all"} onValueChange={(val) => setBuildingType(val === "all" ? "" : val)}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="All buildings" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All buildings</SelectItem>
+                      <SelectItem value="all">All buildings</SelectItem>
                       {Object.entries(buildingTypeLabels).map(
                         ([value, label]) => (
                           <SelectItem key={value} value={value}>
@@ -502,22 +515,65 @@ export default function PropertiesPage() {
                 {pagination && pagination.pages > 1 && (
                   <div className="mt-10 flex justify-center">
                     <div className="flex items-center gap-2">
-                      {Array.from(
-                        { length: pagination.pages },
-                        (_, i) => i + 1
-                      ).map((page) => (
-                        <button
-                          key={page}
-                          className={cn(
-                            "h-10 w-10 rounded-xl text-sm font-medium transition-colors",
-                            page === pagination.page
-                              ? "bg-[#1B4D3E] text-white"
-                              : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                          )}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                      {/* Previous Button */}
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                          currentPage === 1
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                        )}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+
+                      {/* Page Numbers - Show 3 pages centered around current */}
+                      {(() => {
+                        const totalPages = pagination.pages;
+                        let startPage = Math.max(1, currentPage - 1);
+                        let endPage = Math.min(totalPages, startPage + 2);
+                        
+                        // Adjust if we're near the end
+                        if (endPage - startPage < 2) {
+                          startPage = Math.max(1, endPage - 2);
+                        }
+                        
+                        const pages = [];
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(i);
+                        }
+                        
+                        return pages.map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={cn(
+                              "h-10 w-10 rounded-xl text-sm font-medium transition-colors",
+                              page === currentPage
+                                ? "bg-[#1B4D3E] text-white"
+                                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                            )}
+                          >
+                            {page}
+                          </button>
+                        ));
+                      })()}
+
+                      {/* Next Button */}
+                      <button
+                        onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
+                        disabled={currentPage === pagination.pages}
+                        className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                          currentPage === pagination.pages
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                        )}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -551,12 +607,12 @@ export default function PropertiesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Location
                 </label>
-                <Select value={area} onValueChange={setArea}>
+                <Select value={area || "all"} onValueChange={(val) => setArea(val === "all" ? "" : val)}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="All areas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All areas</SelectItem>
+                    <SelectItem value="all">All areas</SelectItem>
                     {kenyanAreas.map((a) => (
                       <SelectItem key={a} value={a}>
                         {a}
@@ -571,12 +627,12 @@ export default function PropertiesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Property Type
                 </label>
-                <Select value={propertyType} onValueChange={setPropertyType}>
+                <Select value={propertyType || "all"} onValueChange={(val) => setPropertyType(val === "all" ? "" : val)}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All types</SelectItem>
+                    <SelectItem value="all">All types</SelectItem>
                     {Object.entries(propertyTypeLabels).map(
                       ([value, label]) => (
                         <SelectItem key={value} value={value}>
