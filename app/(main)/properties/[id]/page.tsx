@@ -134,9 +134,14 @@ export default function PropertyDetailPage() {
       try {
         const res = await fetch(`/api/listings/${id}`);
         if (res.ok) {
-          const data = await res.json();
-          setListing(data.listing);
-          setIsSaved(data.isSaved);
+          const responseData = await res.json();
+          if (responseData.success) {
+            setListing(responseData.data.listing);
+            setIsSaved(responseData.data.isSaved);
+          } else {
+             setListing(responseData.listing || null);
+             setIsSaved(responseData.isSaved || false);
+          }
         } else if (res.status === 404) {
           setError("Listing not found");
         }

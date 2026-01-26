@@ -3,22 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from '../route'
 import { NextRequest } from 'next/server'
 
-// Mock next/server
-vi.mock('next/server', () => {
-    return {
-        NextRequest: class extends Request {
-            constructor(input: RequestInfo | URL, init?: RequestInit) {
-                super(input, init)
-            }
-        },
-        NextResponse: {
-            json: (body: any, init?: ResponseInit) => {
-                return Response.json(body, init)
-            }
-        }
-    }
-})
-
 // Mock Prisma
 const prismaMock = {
     listing: {
@@ -35,6 +19,16 @@ vi.mock('@/app/lib/auth', () => ({
     getCurrentUser: vi.fn().mockResolvedValue({ id: 'user-123', role: 'TENANT' }),
 }))
 
+// Mock logger to avoid cluttering test output
+vi.mock('@/app/lib/logger', () => ({
+    logger: {
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+    }
+}))
+
 describe('Listings API', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -43,9 +37,10 @@ describe('Listings API', () => {
     })
 
     it('should return listings with default parameters', async () => {
+        // Create a real Request object which NextRequest extends/implements compatible interface
         const req = new NextRequest('http://localhost/api/listings')
         const res = await GET(req)
-        const data = await res.json()
+        const json = await res.json()
 
         expect(prismaMock.listing.findMany).toHaveBeenCalledWith(expect.objectContaining({
             where: { status: 'ACTIVE' },
@@ -54,8 +49,9 @@ describe('Listings API', () => {
             orderBy: { createdAt: 'desc' }
         }))
 
-        expect(data.listings).toEqual([])
-        expect(data.pagination.page).toBe(1)
+        expect(json.success).toBe(true)
+        expect(json.data.listings).toEqual([])
+        expect(json.data.pagination.page).toBe(1)
     })
 
     it('should filter by properties', async () => {

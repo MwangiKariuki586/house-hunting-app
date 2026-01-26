@@ -118,9 +118,14 @@ export default function PropertiesPage() {
 
       const res = await fetch(`/api/listings?${params.toString()}`);
       if (res.ok) {
-        const data = await res.json();
-        setListings(data.listings);
-        setPagination(data.pagination);
+        const responseData = await res.json();
+        if (responseData.success) {
+          setListings(responseData.data.listings);
+          setPagination(responseData.data.pagination);
+        } else {
+             setListings(responseData.listings || []);
+             setPagination(responseData.pagination || null);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch listings:", error);

@@ -45,14 +45,16 @@ export default function LoginPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        setError(result.error || "Login failed");
+        setError(result.error?.message || (typeof result.error === 'string' ? result.error : "Login failed"));
         return;
       }
 
       // Redirect based on role
-      if (result.user.role === "LANDLORD") {
+      const user = result.success ? result.data.user : result.user;
+      
+      if (user.role === "LANDLORD") {
         router.push("/dashboard/landlord/listings");
-      } else if (result.user.role === "ADMIN") {
+      } else if (user.role === "ADMIN") {
         router.push("/admin");
       } else {
         router.push("/properties");

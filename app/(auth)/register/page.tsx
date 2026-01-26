@@ -68,7 +68,7 @@ function RegisterForm() {
       const result = await res.json();
 
       if (!res.ok) {
-        setError(result.error || "Registration failed");
+        setError(result.error?.message || (typeof result.error === 'string' ? result.error : "Registration failed"));
         return;
       }
 
