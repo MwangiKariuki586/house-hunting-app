@@ -1,8 +1,10 @@
 // Listings API route for VerifiedNyumba
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/auth'
 import { createListingSchema, listingFilterSchema } from '@/app/lib/validations/listing'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 // Get listings with filters
 export async function GET(request: NextRequest) {
@@ -97,7 +99,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
+    return successResponse({
       listings,
       pagination: {
         page: filters.page,
@@ -107,11 +109,8 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Get listings error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch listings', code: 'LISTINGS_FETCH_ERROR' },
-      { status: 500 }
-    )
+    logger.error('Failed to fetch listings', error)
+    return handleAPIError(error)
   }
 }
 
@@ -121,11 +120,11 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return errorResponse('Not authenticated', 'AUTHENTICATION_ERROR', 401)
     }
 
     if (user.role !== 'LANDLORD' && user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Only landlords can create listings' }, { status: 403 })
+      return errorResponse('Only landlords can create listings', 'AUTHORIZATION_ERROR', 403)
     }
 
     const body = await request.json()
@@ -134,18 +133,12 @@ export async function POST(request: NextRequest) {
     // Validate listing data
     const validationResult = createListingSchema.safeParse(listingData)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+      return errorResponse('Validation failed', 'VALIDATION_ERROR', 400, validationResult.error.flatten())
     }
 
     // Validate photos
     if (!photos || photos.length < 3) {
-      return NextResponse.json(
-        { error: 'At least 3 photos are required' },
-        { status: 400 }
-      )
+      return errorResponse('At least 3 photos are required', 'VALIDATION_ERROR', 400)
     }
 
     // Create listing with photos
@@ -175,13 +168,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ listing }, { status: 201 })
+    logger.info('New listing created', { listingId: listing.id, userId: user.id })
+    return successResponse({ listing }, 201)
   } catch (error) {
-    console.error('Create listing error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create listing', code: 'LISTING_CREATE_ERROR' },
-      { status: 500 }
-    )
+    logger.error('Failed to create listing', error)
+    return handleAPIError(error)
   }
 }
 

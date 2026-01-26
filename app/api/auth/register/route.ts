@@ -1,5 +1,5 @@
 // Registration API route for VerifiedNyumba
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/app/lib/prisma'
 import {
   hashPassword,
@@ -9,6 +9,8 @@ import {
   setAuthCookies,
 } from '@/app/lib/auth'
 import { registerSchema, formatKenyanPhone } from '@/app/lib/validations/auth'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +19,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = registerSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+      return errorResponse('Validation failed', 'VALIDATION_ERROR', 400, validationResult.error.flatten())
     }
 
     const { email, phone, password, firstName, lastName, role } = validationResult.data
@@ -37,10 +36,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       const field = existingUser.email === email.toLowerCase() ? 'email' : 'phone'
-      return NextResponse.json(
-        { error: `A user with this ${field} already exists` },
-        { status: 409 }
-      )
+      return errorResponse(`A user with this ${field} already exists`, 'VALIDATION_ERROR', 409)
     }
 
     // Hash password
@@ -84,19 +80,18 @@ export async function POST(request: NextRequest) {
     // Set cookies
     await setAuthCookies(accessToken, refreshToken)
 
-    return NextResponse.json(
+    logger.info('User registered successfully', { userId: user.id, role: user.role })
+
+    return successResponse(
       {
         message: 'Registration successful',
         user,
       },
-      { status: 201 }
+      201
     )
   } catch (error) {
-    console.error('Registration error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred during registration' },
-      { status: 500 }
-    )
+    logger.error('Registration error', error)
+    return handleAPIError(error)
   }
 }
 
