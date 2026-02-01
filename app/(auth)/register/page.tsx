@@ -3,9 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, UserPlus, Home, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -18,71 +16,58 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 import { cn } from "@/app/lib/utils";
-import { registerSchema, type RegisterInput } from "@/app/lib/validations/auth";
+import { registerAction, type RegisterState } from "@/app/actions/auth";
 
 /**
- * Inner registration form component that uses useSearchParams
- * Must be wrapped in Suspense boundary
+ * Registration form component
  */
 function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const defaultRole =
-    searchParams.get("role") === "LANDLORD" ? "LANDLORD" : "TENANT";
+  
+  // Get default role from URL params on client side
+  const [defaultRole, setDefaultRole] = React.useState<"TENANT" | "LANDLORD">("TENANT");
+  
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get("role");
+    if (role === "LANDLORD") {
+      setDefaultRole("LANDLORD");
+    }
+  }, []);
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [selectedRole, setSelectedRole] = React.useState<"TENANT" | "LANDLORD">(defaultRole);
+  
+  // Update selectedRole when defaultRole changes
+  React.useEffect(() => {
+    setSelectedRole(defaultRole);
+  }, [defaultRole]);
+  
+  // Form field states
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: defaultRole as "TENANT" | "LANDLORD",
-      email: "",
-      phone: "",
-      password: "",
-      confirmPassword: "",
-      firstName: "",
-      lastName: "",
-    },
-  });
+  const [state, formAction, isPending] = React.useActionState(registerAction, {} as RegisterState);
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
-  const selectedRole = watch("role");
-
-  const onSubmit = async (data: RegisterInput) => {
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        setError(result.error?.message || (typeof result.error === 'string' ? result.error : "Registration failed"));
-        return;
-      }
-
-      // Redirect based on role
-      if (data.role === "LANDLORD") {
-        router.push("/dashboard/landlord/verification");
-      } else {
-        router.push("/properties");
-      }
-
+  // Handle redirect on successful registration
+  React.useEffect(() => {
+    if (state.success && state.redirectTo) {
+      setIsRedirecting(true);
       router.refresh();
-    } catch {
-      setError("An unexpected error occurred");
+      router.push(state.redirectTo);
     }
+  }, [state.success, state.redirectTo, router]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    formAction(formData);
   };
 
   return (
@@ -94,13 +79,16 @@ function RegisterForm() {
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {error && (
+          {state.error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
+              {state.error}
             </div>
           )}
+
+          {/* Hidden role input for form submission */}
+          <input type="hidden" name="role" value={selectedRole} />
 
           {/* Role Selection */}
           <div>
@@ -110,7 +98,7 @@ function RegisterForm() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setValue("role", "TENANT")}
+                onClick={() => setSelectedRole("TENANT")}
                 className={cn(
                   "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors",
                   selectedRole === "TENANT"
@@ -123,7 +111,7 @@ function RegisterForm() {
               </button>
               <button
                 type="button"
-                onClick={() => setValue("role", "LANDLORD")}
+                onClick={() => setSelectedRole("LANDLORD")}
                 className={cn(
                   "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors",
                   selectedRole === "LANDLORD"
@@ -141,41 +129,51 @@ function RegisterForm() {
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="First Name"
+              name="firstName"
               placeholder="John"
-              error={errors.firstName?.message}
-              {...register("firstName")}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={state.fieldErrors?.firstName?.[0]}
             />
             <Input
               label="Last Name"
+              name="lastName"
               placeholder="Doe"
-              error={errors.lastName?.message}
-              {...register("lastName")}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={state.fieldErrors?.lastName?.[0]}
             />
           </div>
 
           <Input
             label="Email"
+            name="email"
             type="email"
             placeholder="you@example.com"
-            error={errors.email?.message}
-            {...register("email")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={state.fieldErrors?.email?.[0]}
           />
 
           <Input
             label="Phone Number"
+            name="phone"
             type="tel"
             placeholder="0712345678"
-            error={errors.phone?.message}
-            {...register("phone")}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            error={state.fieldErrors?.phone?.[0]}
           />
 
           <div className="relative">
             <Input
               label="Password"
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
-              error={errors.password?.message}
-              {...register("password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={state.fieldErrors?.password?.[0]}
             />
             <button
               type="button"
@@ -193,10 +191,12 @@ function RegisterForm() {
           <div className="relative">
             <Input
               label="Confirm Password"
+              name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm your password"
-              error={errors.confirmPassword?.message}
-              {...register("confirmPassword")}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={state.fieldErrors?.confirmPassword?.[0]}
             />
             <button
               type="button"
@@ -227,11 +227,12 @@ function RegisterForm() {
         <CardFooter className="flex flex-col gap-4">
           <Button
             type="submit"
-            className="w-full gap-2"
-            isLoading={isSubmitting}
+            className="w-full gap-2 cursor-pointer"
+            isLoading={isPending || isRedirecting}
+            disabled={isPending || isRedirecting}
           >
-            <UserPlus className="h-4 w-4" />
-            Create account
+            {!isPending && !isRedirecting && <UserPlus className="h-4 w-4" />}
+            {isRedirecting ? "Redirecting..." : isPending ? "Creating account..." : "Create account"}
           </Button>
 
           <p className="text-center text-sm text-gray-600">
@@ -250,32 +251,8 @@ function RegisterForm() {
 }
 
 /**
- * Loading fallback for Suspense boundary
- */
-function RegisterFormSkeleton() {
-  return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>
-          Join VerifiedNyumba and find your dream home
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
  * Main register page component
- * Wraps the form in Suspense to handle useSearchParams during static generation
  */
 export default function RegisterPage() {
-  return (
-    <React.Suspense fallback={<RegisterFormSkeleton />}>
-      <RegisterForm />
-    </React.Suspense>
-  );
+  return <RegisterForm />;
 }

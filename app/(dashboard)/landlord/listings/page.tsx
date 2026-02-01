@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/app/components/ui/card";
+import { ProfileCompletionBanner } from "@/app/components/ui/profile-completion-banner";
 import { formatPrice, formatDate, propertyTypeLabels } from "@/app/lib/utils";
 
 interface ListingPhoto {
@@ -49,22 +50,61 @@ interface Listing {
 export default function LandlordListingsPage() {
   const [listings, setListings] = React.useState<Listing[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [userProfile, setUserProfile] = React.useState<{
+    profileCompleteness: number;
+    profileTier: "BASIC" | "PHONE_VERIFIED" | "ID_VERIFIED" | "FULLY_VERIFIED";
+    phoneVerified: boolean;
+    idVerified: boolean;
+  } | null>(null);
 
   React.useEffect(() => {
-    const fetchListings = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/landlord/listings");
-        if (res.ok) {
-          const data = await res.json();
+        // Fetch listings and user profile in parallel
+        const [listingsRes, profileRes] = await Promise.all([
+          fetch("/api/landlord/listings"),
+          fetch("/api/user/profile"),
+        ]);
+        
+        if (listingsRes.ok) {
+          const data = await listingsRes.json();
           setListings(data.listings);
         }
+        
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          // Calculate tier and completeness from profile data
+          let completeness = 0;
+          let tier: "BASIC" | "PHONE_VERIFIED" | "ID_VERIFIED" | "FULLY_VERIFIED" = "BASIC";
+          
+          if (profile.emailVerified) completeness += 15;
+          if (profile.phoneVerified) {
+            completeness += 15;
+            tier = "PHONE_VERIFIED";
+          }
+          if (profile.idVerified) {
+            completeness += 35;
+            tier = "ID_VERIFIED";
+          }
+          if (profile.propertyOwnerVerified) {
+            completeness += 35;
+            tier = "FULLY_VERIFIED";
+          }
+          
+          setUserProfile({
+            profileCompleteness: completeness,
+            profileTier: tier,
+            phoneVerified: profile.phoneVerified || false,
+            idVerified: profile.idVerified || false,
+          });
+        }
       } catch {
-        console.error("Failed to fetch listings");
+        console.error("Failed to fetch data");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchListings();
+    fetchData();
   }, []);
 
   const updateStatus = async (id: string, status: string) => {
@@ -126,13 +166,30 @@ export default function LandlordListingsPage() {
 
   return (
     <div>
+      {/* Profile Completion Banner - shown for non-verified landlords */}
+      {userProfile && userProfile.profileTier !== "FULLY_VERIFIED" && (
+        <ProfileCompletionBanner
+          completeness={userProfile.profileCompleteness}
+          tier={userProfile.profileTier}
+          nextStep={
+            !userProfile.phoneVerified
+              ? { action: "VERIFY_PHONE", description: "Verify your phone number", percentageGain: 15 }
+              : !userProfile.idVerified
+              ? { action: "UPLOAD_ID", description: "Upload your ID document", percentageGain: 35 }
+              : { action: "VERIFY_PROPERTY", description: "Complete property verification", percentageGain: 35 }
+          }
+          completeProfileHref="/landlord/verification"
+          className="mb-6"
+        />
+      )}
+
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Listings</h1>
           <p className="mt-1 text-gray-600">Manage your property listings</p>
         </div>
-        <Link href="/dashboard/landlord/create">
+        <Link href="/landlord/create">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             New Listing
@@ -148,7 +205,7 @@ export default function LandlordListingsPage() {
             <p className="mt-2 text-gray-600">
               Create your first listing to start receiving inquiries
             </p>
-            <Link href="/dashboard/landlord/create">
+            <Link href="/landlord/create">
               <Button className="mt-4 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Listing
@@ -229,7 +286,7 @@ export default function LandlordListingsPage() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/landlord/edit/${listing.id}`}>
+                        <Link href={`/landlord/edit/${listing.id}`}>
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </Link>

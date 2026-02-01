@@ -127,6 +127,62 @@ export async function POST(request: NextRequest) {
       return errorResponse('Only landlords can create listings', 'AUTHORIZATION_ERROR', 403)
     }
 
+    // Get full user data including verification info and listing count
+    const [fullUser, listingCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          phoneVerified: true,
+          verificationStatus: true,
+        }
+      }),
+      prisma.listing.count({
+        where: {
+          landlordId: user.id,
+          status: { not: 'DELETED' }
+        }
+      })
+    ])
+
+    if (!fullUser) {
+      return errorResponse('User not found', 'NOT_FOUND', 404)
+    }
+
+    // Check if user can create listings (requires phone verification)
+    if (!fullUser.phoneVerified) {
+      return errorResponse(
+        'Please verify your phone number to create listings',
+        'PHONE_VERIFICATION_REQUIRED',
+        403
+      )
+    }
+
+    // Determine tier from verification status
+    // Once new fields are added, this will use idVerified/propertyOwnerVerified instead
+    let currentTier = 'PHONE_VERIFIED'
+    if (fullUser.verificationStatus === 'VERIFIED') {
+      currentTier = 'FULLY_VERIFIED'
+    }
+
+    // Define tier limits
+    const tierLimits: Record<string, number> = {
+      BASIC: 2,
+      PHONE_VERIFIED: 5,
+      ID_VERIFIED: 10,
+      FULLY_VERIFIED: Infinity,
+    }
+
+    const listingLimit = tierLimits[currentTier] || 5
+
+    // Check listing limit (admins bypass)
+    if (user.role !== 'ADMIN' && listingCount >= listingLimit) {
+      return errorResponse(
+        `You've reached the maximum of ${listingLimit} listings for your tier. Upgrade your profile to create more listings.`,
+        'LISTING_LIMIT_REACHED',
+        403
+      )
+    }
+
     const body = await request.json()
     const { photos, ...listingData } = body
 

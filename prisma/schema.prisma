@@ -24,6 +24,14 @@ enum VerificationStatus {
   REJECTED
 }
 
+// Profile verification tiers for incremental verification
+enum ProfileTier {
+  BASIC           // No verification - can browse, limited listing (2 max)
+  PHONE_VERIFIED  // Phone/email verified - can list (5 max), basic analytics
+  ID_VERIFIED     // ID document verified - 10 listings, mutual phone reveal
+  FULLY_VERIFIED  // All documents verified - unlimited, priority search
+}
+
 enum ListingStatus {
   ACTIVE
   PAUSED
@@ -108,6 +116,14 @@ model User {
   verificationDocs     VerificationDoc[]
   verificationNote     String?
   verifiedAt           DateTime?
+  
+  // Profile tier system (incremental verification)
+  profileTier          ProfileTier        @default(BASIC)
+  profileCompleteness  Int                @default(0)  // 0-100 percentage
+  idVerified           Boolean            @default(false)
+  idVerifiedAt         DateTime?
+  propertyOwnerVerified Boolean           @default(false)
+  propertyVerifiedAt   DateTime?
   
   // Refresh tokens for JWT
   refreshTokens        RefreshToken[]

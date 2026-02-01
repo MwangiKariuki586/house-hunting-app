@@ -8,6 +8,9 @@ type ErrorCode =
     | 'NOT_FOUND'
     | 'INTERNAL_SERVER_ERROR'
     | 'RATE_LIMIT_EXCEEDED'
+    | 'PHONE_VERIFICATION_REQUIRED'
+    | 'LISTING_LIMIT_REACHED'
+    | 'TIER_UPGRADE_REQUIRED'
 
 interface APIErrorResponse {
     success: false

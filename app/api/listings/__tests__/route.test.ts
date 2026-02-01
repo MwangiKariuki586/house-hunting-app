@@ -1,7 +1,21 @@
-// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from '../route'
-import { NextRequest } from 'next/server'
+
+
+// Mock next/server
+vi.mock('next/server', () => {
+    return {
+        NextRequest: class extends Request { },
+        NextResponse: {
+            json: (body: any, init?: any) => ({
+                json: async () => body,
+                status: init?.status || 200,
+                ok: (init?.status || 200) >= 200 && (init?.status || 200) < 300,
+            })
+        }
+    }
+})
 
 // Mock Prisma
 const prismaMock = {
@@ -37,8 +51,7 @@ describe('Listings API', () => {
     })
 
     it('should return listings with default parameters', async () => {
-        // Create a real Request object which NextRequest extends/implements compatible interface
-        const req = new NextRequest('http://localhost/api/listings')
+        const req = new Request('http://localhost/api/listings') as any
         const res = await GET(req)
         const json = await res.json()
 
@@ -55,7 +68,7 @@ describe('Listings API', () => {
     })
 
     it('should filter by properties', async () => {
-        const req = new NextRequest('http://localhost/api/listings?area=Westlands&propertyType=ONE_BEDROOM&minPrice=10000')
+        const req = new Request('http://localhost/api/listings?area=Westlands&propertyType=ONE_BEDROOM&minPrice=10000') as any
         await GET(req)
 
         expect(prismaMock.listing.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -71,7 +84,7 @@ describe('Listings API', () => {
     })
 
     it('should handle boolean filters correctly', async () => {
-        const req = new NextRequest('http://localhost/api/listings?parking=true&petsAllowed=true')
+        const req = new Request('http://localhost/api/listings?parking=true&petsAllowed=true') as any
         await GET(req)
 
         expect(prismaMock.listing.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -83,7 +96,7 @@ describe('Listings API', () => {
     })
 
     it('should sort listings', async () => {
-        const req = new NextRequest('http://localhost/api/listings?sortBy=price_low')
+        const req = new Request('http://localhost/api/listings?sortBy=price_low') as any
         await GET(req)
 
         expect(prismaMock.listing.findMany).toHaveBeenCalledWith(expect.objectContaining({

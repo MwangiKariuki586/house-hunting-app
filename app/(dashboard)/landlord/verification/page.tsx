@@ -247,7 +247,7 @@ export default function LandlordVerificationPage() {
             Your landlord account has been verified. You can now list properties
             with the &quot;Verified Landlord&quot; badge.
           </p>
-          <Button onClick={() => router.push("/dashboard/landlord/create")}>
+          <Button onClick={() => router.push("/landlord/create")}>
             Create Your First Listing
           </Button>
         </CardContent>
@@ -380,7 +380,6 @@ export default function LandlordVerificationPage() {
                         variant={isUploaded ? "outline" : "default"}
                         size="sm"
                         disabled={isUploading}
-                        asChild
                       >
                         <span>
                           {isUploading ? (

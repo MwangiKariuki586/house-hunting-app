@@ -15,7 +15,15 @@ import {
   Settings2,
   ImagePlus,
   Check,
+  Save,
+  RefreshCw,
+  Trash2,
 } from "lucide-react";
+import {
+  useDraftStorage,
+  formatTimeAgo,
+  type UploadedPhoto,
+} from "@/app/lib/hooks/use-draft-storage";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Textarea } from "@/app/components/ui/textarea";
@@ -61,9 +69,12 @@ const steps: { id: Step; label: string; icon: React.ReactNode }[] = [
   { id: "photos", label: "Photos", icon: <ImagePlus className="h-4 w-4" /> },
 ];
 
-interface UploadedPhoto {
-  url: string;
-  publicId: string;
+// UploadedPhoto type is now imported from use-draft-storage
+
+// Interface for local photo files (before upload)
+interface LocalPhoto {
+  file: File;
+  previewUrl: string;
   isMain: boolean;
 }
 
@@ -71,9 +82,24 @@ export default function CreateListingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = React.useState<Step>("basics");
   const [error, setError] = React.useState("");
-  const [photos, setPhotos] = React.useState<UploadedPhoto[]>([]);
-  const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
+  const [phoneVerificationRequired, setPhoneVerificationRequired] = React.useState(false);
+  // Local photos stored as File objects until submission
+  const [localPhotos, setLocalPhotos] = React.useState<LocalPhoto[]>([]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState<string>("");
+  const [showDraftPrompt, setShowDraftPrompt] = React.useState(false);
+  const [draftLoaded, setDraftLoaded] = React.useState(false);
+
+  // Draft storage hook - NOTE: We don't save File objects (not serializable)
+  // Draft will only preserve form data, not photos
+  const {
+    hasDraft,
+    draft,
+    lastSaved,
+    saveDraft,
+    clearDraft,
+    isSaving,
+  } = useDraftStorage<FormData>("listing-draft");
 
   type FormData = {
     title: string;
@@ -153,6 +179,65 @@ export default function CreateListingPage() {
 
   const selectedAmenities = watch("amenities") || [];
 
+  // Check for existing draft on mount
+  React.useEffect(() => {
+    if (hasDraft && draft && !draftLoaded) {
+      // Show prompt to resume or start fresh
+      setShowDraftPrompt(true);
+    } else if (!hasDraft && !draftLoaded) {
+      // No existing draft, enable saving immediately
+      setDraftLoaded(true);
+    }
+  }, [hasDraft, draft, draftLoaded]);
+
+  // Auto-save form data on changes (photos are NOT saved - File objects not serializable)
+  const formValues = watch();
+  React.useEffect(() => {
+    // Don't save if we haven't loaded the draft yet or if prompt is showing
+    if (!draftLoaded || showDraftPrompt) return;
+    
+    saveDraft({
+      formData: formValues,
+      photos: [], // Photos are not saved in draft (File objects)
+      currentStep,
+    });
+  }, [formValues, currentStep, draftLoaded, showDraftPrompt, saveDraft]);
+
+  // Handle resuming draft
+  const handleResumeDraft = React.useCallback(() => {
+    if (draft) {
+      // Restore form data
+      if (draft.formData) {
+        Object.entries(draft.formData).forEach(([key, value]) => {
+          setValue(key as keyof FormData, value as FormData[keyof FormData]);
+        });
+      }
+      // Photos cannot be restored (File objects are not serializable)
+      // Restore step
+      if (draft.currentStep) {
+        setCurrentStep(draft.currentStep as Step);
+      }
+    }
+    setShowDraftPrompt(false);
+    setDraftLoaded(true);
+  }, [draft, setValue]);
+
+  // Handle starting fresh
+  const handleStartFresh = React.useCallback(() => {
+    clearDraft();
+    setShowDraftPrompt(false);
+    setDraftLoaded(true);
+  }, [clearDraft]);
+
+  // Handle clearing draft manually
+  const handleClearDraft = React.useCallback(() => {
+    if (confirm("Clear this draft? Your progress will be lost.")) {
+      clearDraft();
+      // Reset form to defaults
+      window.location.reload();
+    }
+  }, [clearDraft]);
+
   const toggleAmenity = (amenity: string) => {
     const current = selectedAmenities;
     if (current.includes(amenity)) {
@@ -165,98 +250,80 @@ export default function CreateListingPage() {
     }
   };
 
-  const handlePhotoUpload = async (files: FileList | null) => {
+  // Handle adding photos locally (no upload until submit)
+  const handlePhotoUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const maxPhotos = 10;
-    if (photos.length + files.length > maxPhotos) {
+    if (localPhotos.length + files.length > maxPhotos) {
       setError(`Maximum ${maxPhotos} photos allowed`);
       return;
     }
 
-    setUploadingPhoto(true);
     setError("");
+    const newPhotos: LocalPhoto[] = [];
 
     for (const file of Array.from(files)) {
-      // Validate file
+      // Validate file size
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         setError("Each photo must be less than 10MB");
         continue;
       }
 
+      // Validate file type
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
       if (!allowedTypes.includes(file.type)) {
         setError("Only JPG, PNG, and WebP images are allowed");
         continue;
       }
 
-      try {
-        // Convert to base64
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      
+      newPhotos.push({
+        file,
+        previewUrl,
+        isMain: localPhotos.length === 0 && newPhotos.length === 0, // First photo is main
+      });
+    }
 
-        const res = await fetch("/api/listings/photos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file: base64 }),
-        });
+    setLocalPhotos(prev => [...prev, ...newPhotos]);
+  };
 
-        if (!res.ok) {
-          const data = await res.json();
-          setError(data.error || "Upload failed");
-          continue;
-        }
-
-        const data = await res.json();
-        setPhotos((prev) => [
-          ...prev,
-          {
-            url: data.url,
-            publicId: data.publicId,
-            isMain: prev.length === 0, // First photo is main
-          },
-        ]);
-      } catch {
-        setError("Photo upload failed");
+  // Remove photo from local state
+  const removePhoto = (index: number) => {
+    setLocalPhotos(prev => {
+      // Revoke the object URL to free memory
+      URL.revokeObjectURL(prev[index].previewUrl);
+      
+      const filtered = prev.filter((_, i) => i !== index);
+      // If we removed the main photo, make the first one main
+      if (filtered.length > 0 && !filtered.some(p => p.isMain)) {
+        filtered[0].isMain = true;
       }
-    }
-
-    setUploadingPhoto(false);
+      return filtered;
+    });
   };
 
-  const removePhoto = async (publicId: string) => {
-    try {
-      await fetch("/api/listings/photos", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId }),
-      });
-
-      setPhotos((prev) => {
-        const filtered = prev.filter((p) => p.publicId !== publicId);
-        // If we removed the main photo, make the first one main
-        if (filtered.length > 0 && !filtered.some((p) => p.isMain)) {
-          filtered[0].isMain = true;
-        }
-        return filtered;
-      });
-    } catch {
-      setError("Failed to remove photo");
-    }
-  };
-
-  const setMainPhoto = (publicId: string) => {
-    setPhotos((prev) =>
-      prev.map((p) => ({
+  // Set main photo
+  const setMainPhoto = (index: number) => {
+    setLocalPhotos(prev =>
+      prev.map((p, i) => ({
         ...p,
-        isMain: p.publicId === publicId,
+        isMain: i === index,
       }))
     );
   };
+
+  // Clean up preview URLs on unmount
+  React.useEffect(() => {
+    return () => {
+      localPhotos.forEach(photo => {
+        URL.revokeObjectURL(photo.previewUrl);
+      });
+    };
+  }, []);
 
   const validateStep = async (step: Step): Promise<boolean> => {
     switch (step) {
@@ -295,8 +362,8 @@ export default function CreateListingPage() {
       case "features":
         return true;
       case "photos":
-        if (photos.length < 3) {
-          setError("Please upload at least 3 photos");
+        if (localPhotos.length < 3) {
+          setError("Please add at least 3 photos");
           return false;
         }
         setError("");
@@ -324,7 +391,7 @@ export default function CreateListingPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (photos.length < 3) {
+    if (localPhotos.length < 3) {
       setError("Please upload at least 3 photos");
       return;
     }
@@ -338,29 +405,83 @@ export default function CreateListingPage() {
 
     setIsSubmitting(true);
     setError("");
+    setUploadProgress("");
 
     try {
+      // Step 1: Upload all photos to Cloudinary
+      const uploadedPhotos: UploadedPhoto[] = [];
+      
+      for (let i = 0; i < localPhotos.length; i++) {
+        const photo = localPhotos[i];
+        setUploadProgress(`Uploading photo ${i + 1} of ${localPhotos.length}...`);
+        
+        // Convert File to base64
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(photo.file);
+        });
+
+        const uploadRes = await fetch("/api/listings/photos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file: base64 }),
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json();
+          throw new Error(errData.error || `Failed to upload photo ${i + 1}`);
+        }
+
+        const uploadData = await uploadRes.json();
+        uploadedPhotos.push({
+          url: uploadData.url,
+          publicId: uploadData.publicId,
+          isMain: photo.isMain,
+        });
+      }
+
+      // Step 2: Create the listing with uploaded photos
+      setUploadProgress("Creating listing...");
+      
       const res = await fetch("/api/listings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...validationResult.data,
-          photos,
+          photos: uploadedPhotos,
         }),
       });
 
       if (!res.ok) {
         const result = await res.json();
-        setError(result.error || "Failed to create listing");
+        // If listing creation fails, we should clean up uploaded photos
+        // (Optional: delete uploadedPhotos from Cloudinary)
+        // API returns: {success: false, error: {code, message}}
+        const errorCode = result.error?.code;
+        const errorMessage = result.error?.message || result.error || "Failed to create listing";
+        
+        // Check if phone verification is required
+        if (errorCode === 'PHONE_VERIFICATION_REQUIRED') {
+          setPhoneVerificationRequired(true);
+        }
+        
+        setError(errorMessage);
         return;
       }
 
       const result = await res.json();
-      router.push(`/properties/${result.listing.id}`);
-    } catch {
-      setError("An unexpected error occurred");
+      // Clear draft on successful submission
+      clearDraft();
+      // Clean up preview URLs
+      localPhotos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+      router.push(`/properties/${result.data.listing.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress("");
     }
   };
 
@@ -368,13 +489,73 @@ export default function CreateListingPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      {/* Draft Recovery Prompt */}
+      {showDraftPrompt && draft && (
+        <div className="mb-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="mt-0.5 h-5 w-5 text-teal-600" />
+            <div className="flex-1">
+              <h3 className="font-medium text-teal-900">
+                Resume your draft?
+              </h3>
+              <p className="mt-1 text-sm text-teal-700">
+                You have an unsaved listing draft
+                {draft.formData?.title && (
+                  <span className="font-medium"> &quot;{draft.formData.title}&quot;</span>
+                )}
+                {draft.lastSaved && (
+                  <span> from {formatTimeAgo(new Date(draft.lastSaved))}</span>
+                )}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleResumeDraft}
+                  className="gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Resume Draft
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartFresh}
+                >
+                  Start Fresh
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create New Listing</h1>
-        <p className="mt-2 text-gray-600">
-          Fill in the details about your property. All information is required
-          for transparency.
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Create New Listing</h1>
+          <p className="mt-2 text-gray-600">
+            Fill in the details about your property. All information is required
+            for transparency.
+          </p>
+        </div>
+        {/* Draft Saved Indicator */}
+        {draftLoaded && lastSaved && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 text-teal-600" />
+                <span>Saved {formatTimeAgo(lastSaved)}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Step Indicator */}
@@ -418,8 +599,25 @@ export default function CreateListingPage() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-600">
-          {error}
+        <div className={`mb-6 rounded-lg p-4 ${phoneVerificationRequired ? 'bg-amber-50 border border-amber-200' : 'bg-red-50'}`}>
+          <p className={`text-sm ${phoneVerificationRequired ? 'text-amber-800' : 'text-red-600'}`}>
+            {error}
+          </p>
+          {phoneVerificationRequired && (
+            <div className="mt-3 flex flex-col gap-2">
+              <p className="text-sm text-amber-700">
+                Your draft is saved. After verification, return here to continue.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => router.push('/landlord/verification')}
+                className="w-fit"
+              >
+                Verify Phone Number
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -857,50 +1055,46 @@ export default function CreateListingPage() {
             <CardContent className="space-y-6">
               {/* Photo Upload Area */}
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 transition-colors hover:border-teal-500 hover:bg-teal-50">
-                {uploadingPhoto ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-                ) : (
-                  <>
-                    <Upload className="mb-2 h-8 w-8 text-gray-400" />
-                    <p className="text-sm font-medium text-gray-700">
-                      Click to upload photos
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      JPG, PNG, WebP up to 10MB each (Max 10 photos)
-                    </p>
-                  </>
-                )}
+                <>
+                  <Upload className="mb-2 h-8 w-8 text-gray-400" />
+                  <p className="text-sm font-medium text-gray-700">
+                    Click to add photos
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    JPG, PNG, WebP up to 10MB each (Max 10 photos)
+                  </p>
+                </>
                 <input
                   type="file"
                   className="hidden"
                   accept="image/jpeg,image/png,image/webp"
                   multiple
                   onChange={(e) => handlePhotoUpload(e.target.files)}
-                  disabled={uploadingPhoto || photos.length >= 10}
+                  disabled={localPhotos.length >= 10}
                 />
               </label>
 
-              {/* Uploaded Photos Grid */}
-              {photos.length > 0 && (
+              {/* Selected Photos Grid (local previews) */}
+              {localPhotos.length > 0 && (
                 <div>
                   <p className="mb-2 text-sm text-gray-600">
-                    {photos.length} photo{photos.length !== 1 ? "s" : ""}{" "}
-                    uploaded. Click a photo to set as main.
+                    {localPhotos.length} photo{localPhotos.length !== 1 ? "s" : ""}{" "}
+                    selected. Click a photo to set as main. Photos will upload when you submit.
                   </p>
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    {photos.map((photo) => (
+                    {localPhotos.map((photo, index) => (
                       <div
-                        key={photo.publicId}
+                        key={index}
                         className={cn(
-                          "group relative aspect-[4/3] overflow-hidden rounded-lg border-2 cursor-pointer",
+                          "group relative aspect-4/3 overflow-hidden rounded-lg border-2 cursor-pointer",
                           photo.isMain
                             ? "border-teal-600"
                             : "border-transparent"
                         )}
-                        onClick={() => setMainPhoto(photo.publicId)}
+                        onClick={() => setMainPhoto(index)}
                       >
                         <Image
-                          src={photo.url}
+                          src={photo.previewUrl}
                           alt="Property"
                           fill
                           className="object-cover"
@@ -914,7 +1108,7 @@ export default function CreateListingPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            removePhoto(photo.publicId);
+                            removePhoto(index);
                           }}
                           className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
                         >
@@ -926,9 +1120,9 @@ export default function CreateListingPage() {
                 </div>
               )}
 
-              {photos.length < 3 && (
+              {localPhotos.length < 3 && (
                 <p className="text-sm text-amber-600">
-                  ⚠️ Please upload at least 3 photos to continue
+                  ⚠️ Please add at least 3 photos to continue
                 </p>
               )}
             </CardContent>
@@ -936,7 +1130,7 @@ export default function CreateListingPage() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="mt-6 flex justify-between">
+        <div className="mt-6 flex items-center justify-between">
           <Button
             type="button"
             variant="outline"
@@ -946,13 +1140,27 @@ export default function CreateListingPage() {
             Previous
           </Button>
 
+          {/* Clear Draft button - shown when draft exists */}
+          {draftLoaded && hasDraft && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearDraft}
+              className="gap-1 text-gray-500 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Draft
+            </Button>
+          )}
+
           {currentStep === "photos" ? (
             <Button
               type="submit"
-              disabled={isSubmitting || photos.length < 3}
+              disabled={isSubmitting || localPhotos.length < 3}
               isLoading={isSubmitting}
             >
-              Create Listing
+              {uploadProgress || "Create Listing"}
             </Button>
           ) : (
             <Button type="button" onClick={nextStep}>

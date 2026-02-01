@@ -135,7 +135,7 @@ export default function LandlordAnalyticsPage() {
             Overview of your listings performance
           </p>
         </div>
-        <Link href="/dashboard/landlord/create">
+        <Link href="/landlord/create">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             New Listing
@@ -237,7 +237,7 @@ export default function LandlordAnalyticsPage() {
               <TrendingUp className="h-5 w-5 text-teal-600" />
               Top Listings
             </CardTitle>
-            <Link href="/dashboard/landlord/listings">
+            <Link href="/landlord/listings">
               <Button variant="ghost" size="sm">
                 View All
               </Button>

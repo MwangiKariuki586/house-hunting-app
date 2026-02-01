@@ -218,14 +218,14 @@ export function Header({ user }: HeaderProps) {
             ) : (
               <>
                 <Link href="/login" className="hidden md:block">
-                  <Button variant="ghost" className="text-gray-700">
+                  <Button variant="ghost" className="text-gray-700 cursor-pointer">
                     Log in
                   </Button>
                 </Link>
-                <Link href="/contact">
+                <Link href="/contact" >
                   <Button
                     variant="accent"
-                    className="shadow-lg shadow-[#1B4D3E]/25"
+                    className="shadow-lg shadow-[#1B4D3E]/25 cursor-pointer"
                   >
                     Contact us
                   </Button>
