@@ -28,7 +28,12 @@ export async function GET() {
                 role: true,
                 emailVerified: true,
                 phoneVerified: true,
-                verificationStatus: true,
+                landlordVerification: {
+                    select: {
+                        status: true,
+                        tier: true,
+                    }
+                },
                 createdAt: true,
                 _count: {
                     select: {
@@ -45,7 +50,12 @@ export async function GET() {
             );
         }
 
-        return NextResponse.json(user);
+        // Flatten for frontend
+        return NextResponse.json({
+            ...user,
+            verificationStatus: user.landlordVerification?.status || 'PENDING',
+            profileTier: user.landlordVerification?.tier || 'BASIC',
+        });
     } catch (error) {
         console.error("Error fetching user profile:", error);
         return NextResponse.json(

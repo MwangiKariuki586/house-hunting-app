@@ -11,6 +11,8 @@ export interface UserVerificationData {
     phoneVerified: boolean;
     idVerified: boolean;
     propertyOwnerVerified: boolean;
+    // No changes needed here actually, as this interface describes the SHAPE of data needed, not the storage persistence.
+    // The previous files like auth.ts verify this shape is returned.
     verificationStatus: "PENDING" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED";
 }
 

@@ -6,7 +6,7 @@
 import * as React from "react";
 
 const DRAFT_KEY = "listing-draft";
-const DEBOUNCE_MS = 1000; // Save after 1 second of inactivity
+const DEBOUNCE_MS = 3000; // Save after 3 seconds of inactivity
 
 export interface UploadedPhoto {
     url: string;
@@ -38,6 +38,8 @@ export interface UseDraftStorageReturn<T> {
     loadDraft: () => ListingDraft<T> | null;
     /** Whether draft is currently being saved */
     isSaving: boolean;
+    /** Whether storage has been checked (avoid premature overwrites) */
+    isStorageLoaded: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export function useDraftStorage<T>(
     const [draft, setDraft] = React.useState<ListingDraft<T> | null>(null);
     const [lastSaved, setLastSaved] = React.useState<Date | null>(null);
     const [isSaving, setIsSaving] = React.useState(false);
+    const [isStorageLoaded, setIsStorageLoaded] = React.useState(false); // New state
 
     const debounceTimer = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -62,6 +65,7 @@ export function useDraftStorage<T>(
             setDraft(existingDraft);
             setLastSaved(new Date(existingDraft.lastSaved));
         }
+        setIsStorageLoaded(true); // Mark as loaded immediately after check
     }, [key]);
 
     const loadDraftFromStorage = React.useCallback((): ListingDraft<T> | null => {
@@ -109,8 +113,6 @@ export function useDraftStorage<T>(
 
     const saveDraft = React.useCallback(
         (data: Partial<ListingDraft<T>>) => {
-            setIsSaving(true);
-
             // Clear existing debounce timer
             if (debounceTimer.current) {
                 clearTimeout(debounceTimer.current);
@@ -118,6 +120,7 @@ export function useDraftStorage<T>(
 
             // Set new debounce timer
             debounceTimer.current = setTimeout(() => {
+                setIsSaving(true);
                 saveDraftToStorage(data);
             }, DEBOUNCE_MS);
         },
@@ -170,6 +173,7 @@ export function useDraftStorage<T>(
         clearDraft,
         loadDraft,
         isSaving,
+        isStorageLoaded, // Return this
     };
 }
 

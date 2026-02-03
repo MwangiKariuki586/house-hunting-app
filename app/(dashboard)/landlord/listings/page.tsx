@@ -262,7 +262,7 @@ export default function LandlordListingsPage() {
                         {listing.viewCount} views
                       </span>
                       <span>
-                        {listing._count.conversations} inquiry
+                        {listing._count.conversations} inquir
                         {listing._count.conversations !== 1 ? "ies" : "y"}
                       </span>
                       <span className="text-gray-400">

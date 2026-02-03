@@ -46,6 +46,7 @@ interface PendingVerification {
   phone: string;
   createdAt: string;
   verificationDocs: VerificationDoc[];
+  verificationNote?: string;
 }
 
 export default function AdminVerificationPage() {
@@ -211,7 +212,14 @@ export default function AdminVerificationPage() {
                       {verification.email} • {verification.phone}
                     </CardDescription>
                   </div>
-                  <Badge variant="warning">Pending Review</Badge>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge variant="warning">Pending Review</Badge>
+                    {verification.verificationNote?.startsWith("Review Scope: ") && (
+                        <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
+                            {verification.verificationNote.replace("Review Scope: ", "")} REVIEW
+                        </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -317,7 +325,7 @@ export default function AdminVerificationPage() {
             </DialogTitle>
           </DialogHeader>
           {previewDoc && (
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
+            <div className="relative aspect-4/3 w-full overflow-hidden rounded-lg bg-gray-100">
               {previewDoc.url.endsWith(".pdf") ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4">
                   <p className="text-gray-600">PDF Document</p>
@@ -346,6 +354,3 @@ export default function AdminVerificationPage() {
     </div>
   );
 }
-
-
-

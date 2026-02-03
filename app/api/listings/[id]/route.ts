@@ -26,8 +26,10 @@ export async function GET(
             firstName: true,
             lastName: true,
             avatar: true,
-            verificationStatus: true,
             createdAt: true,
+            landlordVerification: {
+              select: { status: true }
+            },
             _count: {
               select: { listings: true },
             },
@@ -65,6 +67,16 @@ export async function GET(
       data: { viewCount: { increment: 1 } },
     })
 
+    // Flatten structure for API compatibility
+    const flattenedListing = {
+      ...listing,
+      landlord: {
+        ...listing.landlord,
+        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
+
     // Check if user has saved this listing
     const user = await getCurrentUser()
     let isSaved = false
@@ -80,7 +92,7 @@ export async function GET(
       isSaved = !!saved
     }
 
-    return successResponse({ listing, isSaved })
+    return successResponse({ listing: flattenedListing, isSaved })
   } catch (error) {
     logger.error('Get listing error', error)
     return handleAPIError(error)
@@ -135,7 +147,9 @@ export async function PATCH(
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: { status: true }
+            },
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             createdAt: true,
@@ -144,8 +158,17 @@ export async function PATCH(
       },
     })
 
+    const flattenedUpdated = {
+      ...updated,
+      landlord: {
+        ...updated.landlord,
+        verificationStatus: updated.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
+
     logger.info('Listing updated', { listingId: id, userId: user.id })
-    return successResponse({ listing: updated })
+    return successResponse({ listing: flattenedUpdated })
   } catch (error) {
     logger.error('Update listing error', error)
     return handleAPIError(error)

@@ -39,7 +39,7 @@ export async function GET() {
                 lastName: true,
                 email: true,
                 phone: true,
-                verificationStatus: true,
+                landlordVerification: { select: { status: true } },
               },
             },
             photos: {
@@ -50,7 +50,20 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json({ reports })
+    // Map to flatten verification status
+    const flattenedReports = reports.map(r => ({
+      ...r,
+      listing: r.listing ? {
+        ...r.listing,
+        landlord: r.listing.landlord ? {
+          ...r.listing.landlord,
+          verificationStatus: r.listing.landlord.landlordVerification?.status || 'PENDING',
+          landlordVerification: undefined
+        } : null
+      } : null
+    }))
+
+    return NextResponse.json({ reports: flattenedReports })
   } catch (error) {
     console.error('Get reports error:', error)
     return NextResponse.json(
@@ -146,13 +159,18 @@ export async function POST(request: NextRequest) {
 
       case 'ban_user':
         // This would typically involve more complex logic
-        // For now, just mark verification as rejected
+        // For now, just mark verification as rejected using normalized model
         await prisma.$transaction([
-          prisma.user.update({
-            where: { id: report.listing.landlordId },
-            data: {
-              verificationStatus: 'REJECTED',
-              verificationNote: 'Account suspended due to policy violations',
+          prisma.landlordVerification.upsert({
+            where: { userId: report.listing.landlordId },
+            create: {
+              userId: report.listing.landlordId,
+              status: 'REJECTED',
+              note: 'Account suspended due to policy violations'
+            },
+            update: {
+              status: 'REJECTED',
+              note: 'Account suspended due to policy violations',
             },
           }),
           prisma.listing.updateMany({
@@ -181,6 +199,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-
-

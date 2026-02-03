@@ -99,6 +99,7 @@ export default function CreateListingPage() {
     saveDraft,
     clearDraft,
     isSaving,
+    isStorageLoaded,
   } = useDraftStorage<FormData>("listing-draft");
 
   type FormData = {
@@ -179,8 +180,10 @@ export default function CreateListingPage() {
 
   const selectedAmenities = watch("amenities") || [];
 
-  // Check for existing draft on mount
+  // Check for existing draft on mount only after storage is loaded
   React.useEffect(() => {
+    if (!isStorageLoaded) return;
+
     if (hasDraft && draft && !draftLoaded) {
       // Show prompt to resume or start fresh
       setShowDraftPrompt(true);
@@ -188,20 +191,35 @@ export default function CreateListingPage() {
       // No existing draft, enable saving immediately
       setDraftLoaded(true);
     }
-  }, [hasDraft, draft, draftLoaded]);
+  }, [hasDraft, draft, draftLoaded, isStorageLoaded]);
 
   // Auto-save form data on changes (photos are NOT saved - File objects not serializable)
   const formValues = watch();
+  const prevSaveDataRef = React.useRef<string>("");
+
   React.useEffect(() => {
     // Don't save if we haven't loaded the draft yet or if prompt is showing
-    if (!draftLoaded || showDraftPrompt) return;
+    // Also wait for storage to be loaded
+    if (!draftLoaded || showDraftPrompt || !isStorageLoaded) return;
+    
+    // Create a stable representation of the data to be saved
+    const dataToSave = {
+      formData: formValues,
+      currentStep,
+    };
+    const dataString = JSON.stringify(dataToSave);
+
+    // Prevent loop: only save if data actually changed
+    if (dataString === prevSaveDataRef.current) return;
     
     saveDraft({
       formData: formValues,
       photos: [], // Photos are not saved in draft (File objects)
       currentStep,
     });
-  }, [formValues, currentStep, draftLoaded, showDraftPrompt, saveDraft]);
+
+    prevSaveDataRef.current = dataString;
+  }, [formValues, currentStep, draftLoaded, showDraftPrompt, saveDraft, isStorageLoaded]);
 
   // Handle resuming draft
   const handleResumeDraft = React.useCallback(() => {
@@ -399,7 +417,12 @@ export default function CreateListingPage() {
     // Validate with zod
     const validationResult = createListingSchema.safeParse(data);
     if (!validationResult.success) {
-      setError("Please fill in all required fields correctly");
+      const fieldErrors = validationResult.error.flatten().fieldErrors;
+      const errorMsg = Object.entries(fieldErrors)
+        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
+        .join("; ");
+      console.error("Validation failed:", validationResult.error);
+      setError(`Please check the following fields: ${errorMsg}`);
       return;
     }
 
@@ -408,6 +431,20 @@ export default function CreateListingPage() {
     setUploadProgress("");
 
     try {
+      // Step 0: Check eligibility before uploading
+      const checkRes = await fetch("/api/listings/check-limit");
+      if (checkRes.ok) {
+           const checkData = await checkRes.json();
+           if (!checkData.allowed) { // Explicit check as we return 200 with allowed: false
+             if (checkData.reason === 'PHONE_VERIFICATION_REQUIRED') {
+                setPhoneVerificationRequired(true);
+             }
+             setError(checkData.message || "You cannot create a listing at this time.");
+             setIsSubmitting(false);
+             return;
+           }
+      }
+
       // Step 1: Upload all photos to Cloudinary
       const uploadedPhotos: UploadedPhoto[] = [];
       
@@ -860,9 +897,10 @@ export default function CreateListingPage() {
                 <Checkbox
                   label="Daily rent available"
                   checked={watch("dailyRentAvailable")}
-                  onCheckedChange={(checked) =>
-                    setValue("dailyRentAvailable", !!checked)
-                  }
+                  onCheckedChange={(checked) => {
+                    setValue("dailyRentAvailable", !!checked);
+                    if (checked) setValue("weeklyRentAvailable", false);
+                  }}
                 />
                 {watch("dailyRentAvailable") && (
                   <Input
@@ -877,9 +915,10 @@ export default function CreateListingPage() {
                 <Checkbox
                   label="Weekly rent available"
                   checked={watch("weeklyRentAvailable")}
-                  onCheckedChange={(checked) =>
-                    setValue("weeklyRentAvailable", !!checked)
-                  }
+                  onCheckedChange={(checked) => {
+                    setValue("weeklyRentAvailable", !!checked);
+                    if (checked) setValue("dailyRentAvailable", false);
+                  }}
                 />
                 {watch("weeklyRentAvailable") && (
                   <Input

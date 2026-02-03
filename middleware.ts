@@ -47,13 +47,13 @@ function isProtectedRoute(pathname: string): boolean {
     return protectedRoutes.some(route => pathname.startsWith(route))
 }
 
-async function verifyAccessToken(token: string): Promise<boolean> {
+async function verifyAccessToken(token: string) {
     try {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-        await jwtVerify(token, secret)
-        return true
+        const { payload } = await jwtVerify(token, secret)
+        return payload
     } catch {
-        return false
+        return null
     }
 }
 
@@ -102,6 +102,21 @@ export async function middleware(request: NextRequest) {
         rateLimitMap.set(ip, record)
 
         return NextResponse.next()
+    }
+
+    // Redirect authenticated users away from auth pages
+    const isAuthPage = ['/login', '/register'].includes(pathname)
+    if (isAuthPage) {
+        const accessToken = request.cookies.get('accessToken')?.value
+        if (accessToken) {
+            const payload = await verifyAccessToken(accessToken)
+            if (payload) {
+                const role = payload.role as string
+                if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url))
+                if (role === 'LANDLORD') return NextResponse.redirect(new URL('/landlord/listings', request.url))
+                return NextResponse.redirect(new URL('/', request.url))
+            }
+        }
     }
 
     // Check if route needs authentication

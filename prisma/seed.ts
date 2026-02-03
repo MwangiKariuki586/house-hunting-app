@@ -316,8 +316,15 @@ async function main() {
                 role: 'LANDLORD',
                 emailVerified: true,
                 phoneVerified: true,
-                verificationStatus: data.verified ? 'VERIFIED' : 'PENDING',
-                verifiedAt: data.verified ? new Date() : null,
+                landlordVerification: {
+                    create: {
+                        status: data.verified ? 'VERIFIED' : 'PENDING',
+                        tier: data.verified ? 'FULLY_VERIFIED' : 'BASIC',
+                        idVerified: data.verified,
+                        propertyVerified: data.verified,
+                        verifiedAt: data.verified ? new Date() : null,
+                    }
+                },
             },
         })
         landlords.push(landlord)

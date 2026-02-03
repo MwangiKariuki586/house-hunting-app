@@ -55,9 +55,13 @@ export async function GET(request: NextRequest) {
       if (filters.maxPrice) (where.monthlyRent as Record<string, number>).lte = filters.maxPrice
     }
 
-    // Verified landlord filter
+    // Verified landlord filter using Normalized Schema
     if (filters.verifiedLandlordOnly) {
-      where.landlord = { verificationStatus: 'VERIFIED' }
+      where.landlord = {
+        landlordVerification: {
+          status: 'VERIFIED'
+        }
+      }
     }
 
     // Sorting
@@ -77,8 +81,8 @@ export async function GET(request: NextRequest) {
     // Get total count
     const total = await prisma.listing.count({ where })
 
-    // Get listings
-    const listings = await prisma.listing.findMany({
+    // Get listings w/ normalized relation
+    const rawListings = await prisma.listing.findMany({
       where,
       orderBy,
       skip: (filters.page - 1) * filters.limit,
@@ -93,11 +97,24 @@ export async function GET(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            // Fetch nested verification status
+            landlordVerification: {
+              select: { status: true }
+            }
           },
         },
       },
     })
+
+    // Flatten structure for API compatibility
+    const listings = rawListings.map(listing => ({
+      ...listing,
+      landlord: {
+        ...listing.landlord,
+        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }))
 
     return successResponse({
       listings,
@@ -127,13 +144,18 @@ export async function POST(request: NextRequest) {
       return errorResponse('Only landlords can create listings', 'AUTHORIZATION_ERROR', 403)
     }
 
-    // Get full user data including verification info and listing count
+    // Get full user data using normalized schema
     const [fullUser, listingCount] = await Promise.all([
       prisma.user.findUnique({
         where: { id: user.id },
         select: {
           phoneVerified: true,
-          verificationStatus: true,
+          landlordVerification: {
+            select: {
+              status: true,
+              tier: true
+            }
+          }
         }
       }),
       prisma.listing.count({
@@ -157,11 +179,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Determine tier from verification status
-    // Once new fields are added, this will use idVerified/propertyOwnerVerified instead
-    let currentTier = 'PHONE_VERIFIED'
-    if (fullUser.verificationStatus === 'VERIFIED') {
-      currentTier = 'FULLY_VERIFIED'
+    // Determine tier from user profile
+    const currentTier = fullUser.landlordVerification?.tier || 'BASIC'
+    const status = fullUser.landlordVerification?.status || 'PENDING'
+
+    // Backward compatibility for tiers
+    let effectiveTier = currentTier
+
+    if (status === 'VERIFIED' && (currentTier === 'BASIC' || currentTier === 'PHONE_VERIFIED')) {
+      effectiveTier = 'FULLY_VERIFIED'
     }
 
     // Define tier limits
@@ -172,7 +198,7 @@ export async function POST(request: NextRequest) {
       FULLY_VERIFIED: Infinity,
     }
 
-    const listingLimit = tierLimits[currentTier] || 5
+    const listingLimit = tierLimits[effectiveTier] || 5
 
     // Check listing limit (admins bypass)
     if (user.role !== 'ADMIN' && listingCount >= listingLimit) {
@@ -198,7 +224,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create listing with photos
-    const listing = await prisma.listing.create({
+    const rawListing = await prisma.listing.create({
       data: {
         ...validationResult.data,
         landlordId: user.id,
@@ -218,11 +244,23 @@ export async function POST(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: { status: true }
+            }
           },
         },
       },
     })
+
+    // Map response
+    const listing = {
+      ...rawListing,
+      landlord: {
+        ...rawListing.landlord,
+        verificationStatus: rawListing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
 
     logger.info('New listing created', { listingId: listing.id, userId: user.id })
     return successResponse({ listing }, 201)
@@ -231,6 +269,3 @@ export async function POST(request: NextRequest) {
     return handleAPIError(error)
   }
 }
-
-
-

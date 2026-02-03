@@ -59,10 +59,20 @@ export async function POST(request: NextRequest) {
         firstName: true,
         lastName: true,
         role: true,
-        verificationStatus: true,
         createdAt: true,
       },
     })
+
+    // Create LandlordVerification entry if role is LANDLORD
+    if (user.role === 'LANDLORD') {
+      await prisma.landlordVerification.create({
+        data: {
+          userId: user.id,
+          status: 'PENDING',
+          tier: 'BASIC'
+        }
+      })
+    }
 
     // Generate tokens
     const tokenPayload = {

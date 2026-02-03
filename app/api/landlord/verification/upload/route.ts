@@ -38,10 +38,14 @@ export async function POST(request: NextRequest) {
     // Check verification status - don't allow uploads if already verified
     const userData = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { verificationStatus: true },
+      select: {
+        landlordVerification: {
+          select: { status: true },
+        },
+      },
     })
 
-    if (userData?.verificationStatus === 'VERIFIED') {
+    if (userData?.landlordVerification?.status === 'VERIFIED') {
       return NextResponse.json(
         { error: 'Already verified' },
         { status: 400 }
@@ -74,10 +78,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Reset verification status if was rejected
-    if (userData?.verificationStatus === 'REJECTED') {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { verificationStatus: 'PENDING', verificationNote: null },
+    if (userData?.landlordVerification?.status === 'REJECTED') {
+      await prisma.landlordVerification.update({
+        where: { userId: user.id },
+        data: { status: 'PENDING', note: null },
       })
     }
 

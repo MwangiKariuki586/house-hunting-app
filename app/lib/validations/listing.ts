@@ -11,7 +11,7 @@ export const createListingSchema = z.object({
     .string()
     .min(50, 'Description must be at least 50 characters')
     .max(2000, 'Description is too long'),
-  
+
   // Location
   area: z.string().min(1, 'Area is required'),
   estate: z.string().optional(),
@@ -21,7 +21,7 @@ export const createListingSchema = z.object({
   longitude: z.number().optional(),
   distanceToCBD: z.number().min(0).optional(),
   distanceToStage: z.number().min(0).optional(),
-  
+
   // Property details
   propertyType: z.enum([
     'BEDSITTER',
@@ -42,7 +42,7 @@ export const createListingSchema = z.object({
   ]),
   bedrooms: z.number().min(0).max(10).default(1),
   bathrooms: z.number().min(1).max(10).default(1),
-  
+
   // Pricing - All required for transparency
   monthlyRent: z
     .number()
@@ -55,7 +55,7 @@ export const createListingSchema = z.object({
   serviceCharge: z.number().min(0).default(0),
   waterCharge: z.number().min(0).default(0),
   garbageCharge: z.number().min(0).default(0),
-  
+
   // Kenya-specific features
   waterType: z.enum(['BOREHOLE', 'COUNCIL', 'BOTH', 'NONE']).default('COUNCIL'),
   electricityType: z.enum(['TOKEN', 'POSTPAID', 'NONE']).default('TOKEN'),
@@ -66,15 +66,15 @@ export const createListingSchema = z.object({
   bachelorFriendly: z.boolean().default(true),
   gatedCommunity: z.boolean().default(false),
   furnished: z.boolean().default(false),
-  
+
   // Amenities
   amenities: z.array(z.string()).default([]),
-  
+
   // Alternative rent options
   dailyRentAvailable: z.boolean().default(false),
   weeklyRentAvailable: z.boolean().default(false),
-  dailyRent: z.number().min(0).optional(),
-  weeklyRent: z.number().min(0).optional(),
+  dailyRent: z.number().min(0).nullable().optional(),
+  weeklyRent: z.number().min(0).nullable().optional(),
 })
 
 export const updateListingSchema = createListingSchema.partial()
@@ -130,17 +130,17 @@ export const kenyanAreas = [
   'Rongai', 'Syokimau', 'Mlolongo', 'Kitengela', 'Athi River',
   'Ruaka', 'Kikuyu', 'Kinoo', 'Uthiru', 'Kawangware',
   'CBD', 'Upper Hill', 'Industrial Area', 'Mombasa Road',
-  
+
   // Mombasa
   'Nyali', 'Bamburi', 'Mtwapa', 'Shanzu', 'Kisauni',
   'Likoni', 'Changamwe', 'Miritini', 'Mikindani',
-  
+
   // Kisumu
   'Milimani', 'Mamboleo', 'Nyalenda', 'Kondele', 'Manyatta',
-  
+
   // Nakuru
   'Milimani Nakuru', 'Section 58', 'Pipeline Nakuru', 'Shabab',
-  
+
   // Eldoret
   'Elgon View', 'Langas', 'Huruma', 'Pioneer',
 ]

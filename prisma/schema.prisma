@@ -111,19 +111,11 @@ model User {
   emailVerified        Boolean            @default(false)
   phoneVerified        Boolean            @default(false)
   
-  // Landlord verification (only for landlords)
-  verificationStatus   VerificationStatus @default(PENDING)
-  verificationDocs     VerificationDoc[]
-  verificationNote     String?
-  verifiedAt           DateTime?
+  // Landlord verification (moved to separate model)
+  landlordVerification LandlordVerification?
   
-  // Profile tier system (incremental verification)
-  profileTier          ProfileTier        @default(BASIC)
-  profileCompleteness  Int                @default(0)  // 0-100 percentage
-  idVerified           Boolean            @default(false)
-  idVerifiedAt         DateTime?
-  propertyOwnerVerified Boolean           @default(false)
-  propertyVerifiedAt   DateTime?
+  // Verification documents (kept on User for direct file ownership)
+  verificationDocs     VerificationDoc[]
   
   // Refresh tokens for JWT
   refreshTokens        RefreshToken[]
@@ -148,6 +140,32 @@ model User {
   showOnlyDirectListings Boolean          @default(false)  // No-agent mode
   
   @@map("users")
+}
+
+// Normalized Landlord Verification Data
+model LandlordVerification {
+  id                   String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String             @unique @db.ObjectId
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status               VerificationStatus @default(PENDING)
+  note                 String?
+  verifiedAt           DateTime?
+  
+  // Tier info
+  tier                 ProfileTier        @default(BASIC)
+  completeness         Int                @default(0)
+  
+  // Specific flags
+  idVerified           Boolean            @default(false)
+  idVerifiedAt         DateTime?
+  propertyVerified     Boolean            @default(false)
+  propertyVerifiedAt   DateTime?
+  
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  
+  @@map("landlord_verifications")
 }
 
 // Verification documents for landlords
