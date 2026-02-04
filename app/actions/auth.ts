@@ -142,6 +142,17 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
             },
         });
 
+        // Create LandlordVerification entry if role is LANDLORD
+        if (user.role === 'LANDLORD') {
+            await prisma.landlordVerification.create({
+                data: {
+                    userId: user.id,
+                    status: 'PENDING',
+                    tier: 'BASIC'
+                }
+            });
+        }
+
         // Generate tokens
         const tokenPayload = { userId: user.id, email: user.email, role: user.role };
         const accessToken = generateAccessToken(tokenPayload);
