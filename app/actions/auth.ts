@@ -108,6 +108,8 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
     const { email, phone, password, firstName, lastName, role } = validationResult.data;
     let redirectPath = "/properties";
 
+    console.log(`[Register] Starting registration for email: ${email.toLowerCase()}, role: ${role}`);
+
     try {
         // Format phone number to international format
         const formattedPhone = formatKenyanPhone(phone);
@@ -160,12 +162,14 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
             setAuthCookies(accessToken, refreshToken)
         ]);
 
+        console.log(`[Register] Success for userId: ${user.id}, role: ${user.role}`);
         logger.info("User registered", { userId: user.id, role: user.role });
 
         // Determine redirect based on role
         if (role === "LANDLORD") redirectPath = "/landlord/listings";
 
     } catch (error) {
+        console.error("[Register] Error:", error);
         logger.error("Registration error", error instanceof Error ? error.message : String(error));
 
         // Check for specific Prisma errors (optional enhancement)
