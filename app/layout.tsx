@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     "rental properties",
     "bedsitter",
     "apartment for rent",
+    
   ],
 };
 export default function RootLayout({
