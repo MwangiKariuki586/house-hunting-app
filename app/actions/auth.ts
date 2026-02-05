@@ -130,7 +130,7 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
         // Hash password
         const hashedPassword = await hashPassword(password);
 
-        // Create user
+        // Create user with atomic LandlordVerification if needed
         const user = await prisma.user.create({
             data: {
                 email: email.toLowerCase(),
@@ -139,19 +139,15 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
                 firstName,
                 lastName,
                 role: role as 'TENANT' | 'LANDLORD',
+                // Create LandlordVerification entry atomically if role is LANDLORD
+                landlordVerification: role === 'LANDLORD' ? {
+                    create: {
+                        status: 'PENDING',
+                        tier: 'BASIC'
+                    }
+                } : undefined
             },
         });
-
-        // Create LandlordVerification entry if role is LANDLORD
-        if (user.role === 'LANDLORD') {
-            await prisma.landlordVerification.create({
-                data: {
-                    userId: user.id,
-                    status: 'PENDING',
-                    tier: 'BASIC'
-                }
-            });
-        }
 
         // Generate tokens
         const tokenPayload = { userId: user.id, email: user.email, role: user.role };
@@ -167,12 +163,18 @@ export async function registerAction(prevState: RegisterState, formData: FormDat
         logger.info("User registered", { userId: user.id, role: user.role });
 
         // Determine redirect based on role
-        // Landlords go to listings (verification is now optional/incremental)
         if (role === "LANDLORD") redirectPath = "/landlord/listings";
 
     } catch (error) {
-        logger.error("Registration error", error);
-        return { error: "An unexpected error occurred", timestamp: Date.now() };
+        logger.error("Registration error", error instanceof Error ? error.message : String(error));
+
+        // Check for specific Prisma errors (optional enhancement)
+        // if (error.code === 'P2002') return { error: "User already exists" };
+
+        return {
+            error: "An unexpected error occurred during registration. Please try again.",
+            timestamp: Date.now()
+        };
     }
 
     return {
