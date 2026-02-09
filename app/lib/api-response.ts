@@ -11,6 +11,13 @@ type ErrorCode =
     | 'PHONE_VERIFICATION_REQUIRED'
     | 'LISTING_LIMIT_REACHED'
     | 'TIER_UPGRADE_REQUIRED'
+    // Auth-specific error codes
+    | 'INVALID_CREDENTIALS'
+    | 'USER_NOT_FOUND'
+    | 'USER_ALREADY_EXISTS'
+    | 'TOKEN_EXPIRED'
+    | 'TOKEN_INVALID'
+    | 'PASSWORD_RESET_FAILED'
 
 interface APIErrorResponse {
     success: false
