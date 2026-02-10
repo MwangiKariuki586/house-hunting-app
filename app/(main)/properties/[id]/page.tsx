@@ -128,6 +128,7 @@ export default function PropertyDetailPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
   const [error, setError] = React.useState("");
+  const [isPhoneRevealed, setIsPhoneRevealed] = React.useState(false);
 
   React.useEffect(() => {
     const fetchListing = async () => {
@@ -230,7 +231,7 @@ export default function PropertyDetailPage() {
           {/* Main Content - Left Side */}
           <div className="lg:col-span-2">
             {/* Image Gallery */}
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-gray-100">
+            <div className="relative aspect-16/10 w-full overflow-hidden rounded-3xl bg-gray-100">
               {listing.photos.length > 0 ? (
                 <>
                   <Image
@@ -485,8 +486,7 @@ export default function PropertyDetailPage() {
                 </div>
 
                 <Button variant="accent" className="w-full mb-4" size="lg">
-                  Contact an Agent
-                </Button>
+Schedule a Visit                </Button>
 
                 {/* Property Type Badges */}
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -571,16 +571,23 @@ export default function PropertyDetailPage() {
                     <MessageSquare className="h-4 w-4" />
                     Send Message
                   </Button>
-                  <Button variant="outline" className="w-full gap-2">
+                  {/* <Button variant="outline" className="w-full gap-2">
                     <Calendar className="h-4 w-4" />
                     Schedule Viewing
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="ghost"
-                    className="w-full gap-2 text-gray-600"
+                    className="w-full gap-2 text-gray-600 hover:text-[#1B4D3E]"
+                    onClick={() => setIsPhoneRevealed(!isPhoneRevealed)}
                   >
                     <Phone className="h-4 w-4" />
-                    Call Landlord
+                    {isPhoneRevealed ? (
+                      <a href={`tel:${listing.landlord.phone}`} className="font-bold underline">
+                        {listing.landlord.phone}
+                      </a>
+                    ) : (
+                      "Call Landlord"
+                    )}
                   </Button>
                 </div>
               </div>

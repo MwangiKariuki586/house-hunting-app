@@ -26,6 +26,7 @@ export async function GET(
             firstName: true,
             lastName: true,
             avatar: true,
+            phone: true,
             createdAt: true,
             landlordVerification: {
               select: { status: true }
