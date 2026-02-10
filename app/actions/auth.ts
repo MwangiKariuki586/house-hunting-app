@@ -75,8 +75,17 @@ export async function loginAction(
     const { password } = validationResult.data;
     let redirectPath = "/properties";
 
+    // Debug: Trace execution start
+    logger.info("Login attempt started", { action: "LOGIN_DEBUG", email });
+
+    if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+        logger.error("Missing JWT secrets", undefined, { action: "LOGIN_CONFIG_ERROR" });
+        return { error: "Configuration error", code: "INTERNAL_ERROR", timestamp: Date.now() };
+    }
+
     try {
         // Find user by email
+        logger.debug("Querying user by email", { action: "LOGIN_DEBUG", email });
         const user = await prisma.user.findUnique({
             where: { email },
         });
@@ -88,7 +97,9 @@ export async function loginAction(
         }
 
         // Verify password
+        logger.debug("Verifying password", { action: "LOGIN_DEBUG", email, userId: user.id });
         const isPasswordValid = await comparePassword(password, user.password);
+
         if (!isPasswordValid) {
             logger.warn("Login failed: invalid password", {
                 action: "LOGIN",
@@ -101,10 +112,14 @@ export async function loginAction(
             });
         }
 
+        logger.debug("Credentials valid, generating tokens", { action: "LOGIN_DEBUG", userId: user.id });
+
         // Generate tokens
         const tokenPayload = { userId: user.id, email: user.email, role: user.role };
         const accessToken = generateAccessToken(tokenPayload);
         const refreshToken = generateRefreshToken(tokenPayload);
+
+        logger.debug("Tokens generated, storing refresh token", { action: "LOGIN_DEBUG", userId: user.id });
 
         // Parallel execution of independent operations
         await Promise.all([
@@ -135,12 +150,18 @@ export async function loginAction(
     } catch (error) {
         // Handle known auth errors
         if (isAuthError(error)) {
-            logger.error("Login failed", error, error.context);
+            logger.error("Login failed (AuthError)", error, { ...error.context, errorStack: error.stack });
             return error.toClientResponse();
         }
 
         // Handle unexpected errors
-        logger.error("Login unexpected error", error, { action: "LOGIN", email });
+        logger.error("Login unexpected error", error, {
+            action: "LOGIN_ERROR",
+            email,
+            errorName: error instanceof Error ? error.name : 'Unknown',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
+
         return {
             error: "An unexpected error occurred. Please try again.",
             code: "INTERNAL_ERROR",
@@ -183,11 +204,15 @@ export async function registerAction(
     const { phone, password, firstName, lastName, role } = validationResult.data;
     let redirectPath = "/properties";
 
+    // Debug: Trace execution start
+    logger.info("Registration attempt started", { action: "REGISTER_DEBUG", email, role });
+
     try {
         // Format phone number to international format
         const formattedPhone = formatKenyanPhone(phone);
 
         // Check if user already exists
+        logger.debug("Checking for existing user", { action: "REGISTER_DEBUG", email });
         const existingUser = await prisma.user.findFirst({
             where: {
                 OR: [{ email }, { phone: formattedPhone }],
@@ -209,9 +234,11 @@ export async function registerAction(
         }
 
         // Hash password
+        logger.debug("Hashing password", { action: "REGISTER_DEBUG" });
         const hashedPassword = await hashPassword(password);
 
         // Create user with atomic LandlordVerification if needed
+        logger.debug("Creating user in database", { action: "REGISTER_DEBUG", role });
         const user = await prisma.user.create({
             data: {
                 email,
@@ -233,6 +260,7 @@ export async function registerAction(
         });
 
         // Generate tokens
+        logger.debug("User created, generating tokens", { action: "REGISTER_DEBUG", userId: user.id });
         const tokenPayload = { userId: user.id, email: user.email, role: user.role };
         const accessToken = generateAccessToken(tokenPayload);
         const refreshToken = generateRefreshToken(tokenPayload);
@@ -273,7 +301,13 @@ export async function registerAction(
         }
 
         // Handle unexpected errors
-        logger.error("Registration unexpected error", error, { action: "REGISTER", email });
+        logger.error("Registration unexpected error", error, {
+            action: "REGISTER_ERROR",
+            email,
+            errorName: error instanceof Error ? error.name : 'Unknown',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
+
         return {
             error: "An unexpected error occurred during registration. Please try again.",
             code: "INTERNAL_ERROR",
@@ -366,7 +400,12 @@ export async function forgotPasswordAction(
             timestamp: Date.now(),
         };
     } catch (error) {
-        logger.error("Forgot password error", error, { action: "FORGOT_PASSWORD", email });
+        logger.error("Forgot password error", error, {
+            action: "FORGOT_PASSWORD_ERROR",
+            email,
+            errorName: error instanceof Error ? error.name : 'Unknown',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
         // Still return success to prevent information leakage
         return {
             success: true,
@@ -475,7 +514,11 @@ export async function resetPasswordAction(
         }
 
         // Handle unexpected errors
-        logger.error("Password reset unexpected error", error, { action: "RESET_PASSWORD" });
+        logger.error("Password reset unexpected error", error, {
+            action: "RESET_PASSWORD_ERROR",
+            errorName: error instanceof Error ? error.name : 'Unknown',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
         return {
             error: "An unexpected error occurred. Please try again.",
             code: "INTERNAL_ERROR",
