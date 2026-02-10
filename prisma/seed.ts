@@ -362,7 +362,7 @@ async function main() {
 
     // Create 10-15 listings per property type for pagination testing
     for (const propertyType of propertyTypes) {
-        const listingsCount = randomInt(10, 15)
+        const listingsCount = 3
         console.log(`  📦 Creating ${listingsCount} ${propertyType.replace('_', ' ')} listings...`)
 
         for (let i = 0; i < listingsCount; i++) {
