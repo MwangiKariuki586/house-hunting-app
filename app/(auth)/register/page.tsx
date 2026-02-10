@@ -148,70 +148,91 @@ function RegisterForm() {
             />
           </div>
 
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={state.fieldErrors?.email?.[0]}
-          />
-
-          <Input
-            label="Phone Number"
-            name="phone"
-            type="tel"
-            placeholder="0712345678"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            error={state.fieldErrors?.phone?.[0]}
-          />
-
-          <div className="relative">
+          {/* Contact fields */}
+          <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Create a strong password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={state.fieldErrors?.password?.[0]}
+              label="Email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={state.fieldErrors?.email?.[0]}
             />
-            <button
-              type="button"
-              className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
+            <Input
+              label="Phone Number"
+              name="phone"
+              type="tel"
+              placeholder="0712345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              error={state.fieldErrors?.phone?.[0]}
+            />
           </div>
 
-          <div className="relative">
-            <Input
-              label="Confirm Password"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              error={state.fieldErrors?.confirmPassword?.[0]}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
+          {/* Password fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label 
+                htmlFor="password" 
+                className="mb-1.5 block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  error={state.fieldErrors?.password?.[0]}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label 
+                htmlFor="confirmPassword" 
+                className="mb-1.5 block text-sm font-medium text-gray-700"
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  error={state.fieldErrors?.confirmPassword?.[0]}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           <p className="text-xs text-gray-500">
