@@ -73,10 +73,16 @@ export async function loginAction(
     }
 
     const { password } = validationResult.data;
+    const callbackUrl = rawData.callbackUrl as string;
     let redirectPath = "/properties";
 
+    // Validate callbackUrl to ensure it's a relative path (security)
+    if (callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")) {
+        redirectPath = callbackUrl;
+    }
+
     // Debug: Trace execution start
-    logger.info("Login attempt started", { action: "LOGIN_DEBUG", email });
+    logger.info("Login attempt started", { action: "LOGIN_DEBUG", email, callbackUrl });
 
     if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
         logger.error("Missing JWT secrets", undefined, { action: "LOGIN_CONFIG_ERROR" });
@@ -138,9 +144,11 @@ export async function loginAction(
             email,
         });
 
-        // Determine redirect based on role
-        if (user.role === "LANDLORD") redirectPath = "/landlord/listings";
-        else if (user.role === "ADMIN") redirectPath = "/admin";
+        // Determine redirect based on role IF no callbackUrl was provided
+        if (!callbackUrl) {
+            if (user.role === "LANDLORD") redirectPath = "/landlord/listings";
+            else if (user.role === "ADMIN") redirectPath = "/admin";
+        }
 
         return {
             success: true,

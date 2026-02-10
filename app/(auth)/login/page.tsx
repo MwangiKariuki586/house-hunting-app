@@ -4,7 +4,7 @@
 import * as React from "react";
 import { startTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -18,8 +18,11 @@ import {
 } from "@/app/components/ui/card";
 import { loginAction, type LoginState } from "@/app/actions/auth";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "";
+  
   const [showPassword, setShowPassword] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -53,6 +56,7 @@ export default function LoginPage() {
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <CardContent className="space-y-4">
           {state.error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
@@ -128,6 +132,19 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <Card className="w-full max-w-md animate-pulse">
+        <CardHeader className="h-24 bg-gray-100 rounded-t-xl" />
+        <CardContent className="h-64 bg-gray-50" />
+      </Card>
+    }>
+      <LoginForm />
+    </React.Suspense>
   );
 }
 

@@ -163,7 +163,8 @@ export default function PropertyDetailPage() {
       if (res.ok) {
         setIsSaved(!isSaved);
       } else if (res.status === 401) {
-        router.push("/login");
+        const currentPath = window.location.pathname;
+        router.push(`/login?callbackUrl=${encodeURIComponent(currentPath)}`);
       }
     } catch {
       console.error("Failed to save listing");
