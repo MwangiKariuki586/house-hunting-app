@@ -41,6 +41,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/app/components/ui/avatar";
+import { ShareModal } from "@/app/components/molecules/share-modal";
 import {
   formatPrice,
   formatDate,
@@ -129,6 +130,8 @@ export default function PropertyDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
   const [error, setError] = React.useState("");
   const [isPhoneRevealed, setIsPhoneRevealed] = React.useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
+  const [shareUrl, setShareUrl] = React.useState("");
 
   React.useEffect(() => {
     const fetchListing = async () => {
@@ -290,15 +293,21 @@ export default function PropertyDetailPage() {
                   <div className="absolute right-4 top-4 flex gap-2">
                     <button
                       onClick={handleSave}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 ${
+                      className={`cursor-pointer flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 ${
                         isSaved ? "text-red-500" : "text-gray-600"
                       }`}
                     >
                       <Heart
-                        className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
+                        className={` h-5 w-5 ${isSaved ? "fill-current" : ""}`}
                       />
                     </button>
-                    <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-[#1B4D3E] transition-all hover:scale-110">
+                    <button 
+                      onClick={() => {
+                        setShareUrl(window.location.href);
+                        setIsShareModalOpen(true);
+                      }}
+                      className="cursor-pointer flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-[#1B4D3E] transition-all hover:scale-110"
+                    >
                       <Share2 className="h-5 w-5" />
                     </button>
                   </div>
@@ -486,7 +495,7 @@ export default function PropertyDetailPage() {
                   <span className="text-gray-500">/month</span>
                 </div>
 
-                <Button variant="accent" className="w-full mb-4" size="lg">
+                <Button onClick={() => router.push("/coming-soon")} variant="accent" className="w-full mb-4" size="lg">
 Schedule a Visit                </Button>
 
                 {/* Property Type Badges */}
@@ -568,7 +577,7 @@ Schedule a Visit                </Button>
                 </div>
 
                 <div className="space-y-3">
-                  <Button variant="default" className="w-full gap-2">
+                  <Button onClick={() => router.push("/coming-soon")} variant="default" className="w-full gap-2">
                     <MessageSquare className="h-4 w-4" />
                     Send Message
                   </Button>
@@ -608,6 +617,15 @@ Schedule a Visit                </Button>
           </div>
         </div>
       </div>
+      
+      {listing && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={setIsShareModalOpen}
+          title={listing.title}
+          url={shareUrl}
+        />
+      )}
     </div>
   );
 }
