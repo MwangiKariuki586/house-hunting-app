@@ -533,7 +533,7 @@ export default function PropertiesPage() {
                       {(() => {
                         const totalPages = pagination.pages;
                         let startPage = Math.max(1, currentPage - 1);
-                        let endPage = Math.min(totalPages, startPage + 2);
+                        const endPage = Math.min(totalPages, startPage + 2);
                         
                         // Adjust if we're near the end
                         if (endPage - startPage < 2) {
