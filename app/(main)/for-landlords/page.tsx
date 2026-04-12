@@ -1,9 +1,5 @@
-/**
- * For Landlords Page
- *
- * A dedicated landing page for property owners/landlords explaining
- * the benefits of listing with VerifiedNyumba and how the platform works.
- */
+
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -19,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { useRouter } from "next/navigation";
 
 // Benefits for landlords
 const benefits = [
@@ -106,7 +103,9 @@ const stats = [
   { value: "0%", label: "Commission Fees" },
 ];
 
+
 export default function ForLandlordsPage() {
+  const navigate = useRouter();
   return (
     <div>
       {/* Hero Section */}
@@ -155,6 +154,9 @@ export default function ForLandlordsPage() {
                 size="xl"
                 variant="outline"
                 className="gap-2 border-white text-white hover:bg-white/10"
+                onClick={() => {
+                  navigate.push("/coming-soon");
+                }}
               >
                 Watch How It Works
               </Button>

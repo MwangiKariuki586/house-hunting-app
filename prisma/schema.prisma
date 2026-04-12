@@ -24,6 +24,13 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum ProfileTier {
+  BASIC
+  PHONE_VERIFIED
+  ID_VERIFIED
+  FULLY_VERIFIED
+}
+
 enum ListingStatus {
   ACTIVE
   PAUSED
@@ -89,36 +96,55 @@ enum ReportStatus {
 }
 
 model User {
-  id                      String             @id @default(uuid())
-  email                   String             @unique
-  phone                   String             @unique
-  password                String
-  firstName               String
-  lastName                String
-  avatar                  String?
-  role                    UserRole           @default(TENANT)
-  emailVerified           Boolean            @default(false)
-  phoneVerified           Boolean            @default(false)
-  verificationStatus      VerificationStatus @default(PENDING)
-  verificationDocs        VerificationDoc[]
-  verificationNote        String?
-  verifiedAt              DateTime?
-  refreshTokens           RefreshToken[]
-  listings                Listing[]
-  savedListings           SavedListing[]
-  chatsAsTenant           Conversation[]     @relation("TenantChats")
-  chatsAsLandlord         Conversation[]     @relation("LandlordChats")
-  messagesSent            Message[]
-  reviewsGiven            Review[]           @relation("ReviewsGiven")
-  reviewsReceived         Review[]           @relation("ReviewsReceived")
-  reports                 Report[]
-  viewingBookings         ViewingBooking[]
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
-  lastLoginAt             DateTime?
-  showOnlyDirectListings  Boolean            @default(false)
+  id                     String                @id @default(uuid())
+  email                  String                @unique
+  phone                  String                @unique
+  password               String
+  firstName              String
+  lastName               String
+  avatar                 String?
+  role                   UserRole              @default(TENANT)
+  emailVerified          Boolean               @default(false)
+  phoneVerified          Boolean               @default(false)
+  landlordVerification   LandlordVerification?
+  verificationDocs       VerificationDoc[]
+  refreshTokens          RefreshToken[]
+  passwordResetTokens    PasswordResetToken[]
+  listings               Listing[]
+  savedListings          SavedListing[]
+  chatsAsTenant          Conversation[]        @relation("TenantChats")
+  chatsAsLandlord        Conversation[]        @relation("LandlordChats")
+  messagesSent           Message[]
+  reviewsGiven           Review[]              @relation("ReviewsGiven")
+  reviewsReceived        Review[]              @relation("ReviewsReceived")
+  reports                Report[]
+  viewingBookings        ViewingBooking[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  lastLoginAt            DateTime?
+  showOnlyDirectListings Boolean               @default(false)
 
   @@map("users")
+}
+
+model LandlordVerification {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             VerificationStatus @default(PENDING)
+  note               String?
+  verifiedAt         DateTime?
+  tier               ProfileTier        @default(BASIC)
+  completeness       Int                @default(0)
+  idVerified         Boolean            @default(false)
+  idVerifiedAt       DateTime?
+  propertyVerified   Boolean            @default(false)
+  propertyVerifiedAt DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([status])
+  @@map("landlord_verifications")
 }
 
 model VerificationDoc {
@@ -146,55 +172,68 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 model Listing {
-  id                    String          @id @default(uuid())
-  landlordId            String
-  landlord              User            @relation(fields: [landlordId], references: [id], onDelete: Cascade)
-  title                 String
-  description           String
-  status                ListingStatus   @default(ACTIVE)
-  area                  String
-  estate                String?
-  landmark              String?
-  address               String?
-  latitude              Float?
-  longitude             Float?
-  distanceToCBD         Float?
-  distanceToStage       Float?
-  propertyType          PropertyType
-  buildingType          BuildingType
-  bedrooms              Int             @default(1)
-  bathrooms             Int             @default(1)
-  monthlyRent           Int
-  deposit               Int
-  serviceCharge         Int             @default(0)
-  waterCharge           Int             @default(0)
-  garbageCharge         Int             @default(0)
-  waterType             WaterType       @default(COUNCIL)
-  electricityType       ElectricityType @default(TOKEN)
-  parking               Boolean         @default(false)
-  parkingSpaces         Int             @default(0)
-  petsAllowed           Boolean         @default(false)
-  familyFriendly        Boolean         @default(true)
-  bachelorFriendly      Boolean         @default(true)
-  gatedCommunity        Boolean         @default(false)
-  furnished             Boolean         @default(false)
-  amenities             String[]        @default([])
-  photos                ListingPhoto[]
-  videoUrl              String?
-  photosVerifiedAt      DateTime?
-  dailyRentAvailable    Boolean         @default(false)
-  weeklyRentAvailable   Boolean         @default(false)
-  dailyRent             Int?
-  weeklyRent            Int?
-  viewCount             Int             @default(0)
-  savedBy               SavedListing[]
-  conversations         Conversation[]
-  reviews               Review[]
-  reports               Report[]
-  viewingSlots          ViewingSlot[]
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  id                  String          @id @default(uuid())
+  landlordId          String
+  landlord            User            @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  title               String
+  description         String
+  status              ListingStatus   @default(ACTIVE)
+  area                String
+  estate              String?
+  landmark            String?
+  address             String?
+  latitude            Float?
+  longitude           Float?
+  distanceToCBD       Float?
+  distanceToStage     Float?
+  propertyType        PropertyType
+  buildingType        BuildingType
+  bedrooms            Int             @default(1)
+  bathrooms           Int             @default(1)
+  monthlyRent         Int
+  deposit             Int
+  serviceCharge       Int             @default(0)
+  waterCharge         Int             @default(0)
+  garbageCharge       Int             @default(0)
+  waterType           WaterType       @default(COUNCIL)
+  electricityType     ElectricityType @default(TOKEN)
+  parking             Boolean         @default(false)
+  parkingSpaces       Int             @default(0)
+  petsAllowed         Boolean         @default(false)
+  familyFriendly      Boolean         @default(true)
+  bachelorFriendly    Boolean         @default(true)
+  gatedCommunity      Boolean         @default(false)
+  furnished           Boolean         @default(false)
+  amenities           String[]        @default([])
+  photos              ListingPhoto[]
+  videoUrl            String?
+  photosVerifiedAt    DateTime?
+  dailyRentAvailable  Boolean         @default(false)
+  weeklyRentAvailable Boolean         @default(false)
+  dailyRent           Int?
+  weeklyRent          Int?
+  viewCount           Int             @default(0)
+  savedBy             SavedListing[]
+  conversations       Conversation[]
+  reviews             Review[]
+  reports             Report[]
+  viewingSlots        ViewingSlot[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   @@index([landlordId])
   @@index([area])

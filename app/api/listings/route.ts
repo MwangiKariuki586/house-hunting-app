@@ -1,8 +1,10 @@
 // Listings API route for VerifiedNyumba
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/auth'
 import { createListingSchema, listingFilterSchema } from '@/app/lib/validations/listing'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 // Get listings with filters
 export async function GET(request: NextRequest) {
@@ -53,9 +55,13 @@ export async function GET(request: NextRequest) {
       if (filters.maxPrice) (where.monthlyRent as Record<string, number>).lte = filters.maxPrice
     }
 
-    // Verified landlord filter
+    // Verified landlord filter using Normalized Schema
     if (filters.verifiedLandlordOnly) {
-      where.landlord = { verificationStatus: 'VERIFIED' }
+      where.landlord = {
+        landlordVerification: {
+          status: 'VERIFIED'
+        }
+      }
     }
 
     // Sorting
@@ -75,8 +81,8 @@ export async function GET(request: NextRequest) {
     // Get total count
     const total = await prisma.listing.count({ where })
 
-    // Get listings
-    const listings = await prisma.listing.findMany({
+    // Get listings w/ normalized relation
+    const rawListings = await prisma.listing.findMany({
       where,
       orderBy,
       skip: (filters.page - 1) * filters.limit,
@@ -91,13 +97,27 @@ export async function GET(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            phone: true,
+            // Fetch nested verification status
+            landlordVerification: {
+              select: { status: true }
+            }
           },
         },
       },
     })
 
-    return NextResponse.json({
+    // Flatten structure for API compatibility
+    const listings = rawListings.map(listing => ({
+      ...listing,
+      landlord: {
+        ...listing.landlord,
+        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }))
+
+    return successResponse({
       listings,
       pagination: {
         page: filters.page,
@@ -107,11 +127,8 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Get listings error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch listings', code: 'LISTINGS_FETCH_ERROR' },
-      { status: 500 }
-    )
+    logger.error('Failed to fetch listings', error)
+    return handleAPIError(error)
   }
 }
 
@@ -121,11 +138,76 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return errorResponse('Not authenticated', 'AUTHENTICATION_ERROR', 401)
     }
 
     if (user.role !== 'LANDLORD' && user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Only landlords can create listings' }, { status: 403 })
+      return errorResponse('Only landlords can create listings', 'AUTHORIZATION_ERROR', 403)
+    }
+
+    // Get full user data using normalized schema
+    const [fullUser, listingCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          phoneVerified: true,
+          landlordVerification: {
+            select: {
+              status: true,
+              tier: true
+            }
+          }
+        }
+      }),
+      prisma.listing.count({
+        where: {
+          landlordId: user.id,
+          status: { not: 'DELETED' }
+        }
+      })
+    ])
+
+    if (!fullUser) {
+      return errorResponse('User not found', 'NOT_FOUND', 404)
+    }
+
+    // Check if user can create listings (requires phone verification)
+    if (!fullUser.phoneVerified) {
+      return errorResponse(
+        'Please verify your phone number to create listings',
+        'PHONE_VERIFICATION_REQUIRED',
+        403
+      )
+    }
+
+    // Determine tier from user profile
+    const currentTier = fullUser.landlordVerification?.tier || 'BASIC'
+    const status = fullUser.landlordVerification?.status || 'PENDING'
+
+    // Backward compatibility for tiers
+    let effectiveTier = currentTier
+
+    if (status === 'VERIFIED' && (currentTier === 'BASIC' || currentTier === 'PHONE_VERIFIED')) {
+      effectiveTier = 'FULLY_VERIFIED'
+    }
+
+    // Define tier limits
+    const tierLimits: Record<string, number> = {
+      BASIC: 2,
+      PHONE_VERIFIED: 5,
+      ID_VERIFIED: 10,
+      FULLY_VERIFIED: Infinity,
+    }
+
+    const listingLimit = tierLimits[effectiveTier] || 5
+
+    // Check listing limit (admins bypass)
+    if (user.role !== 'ADMIN' && listingCount >= listingLimit) {
+      return errorResponse(
+        `You've reached the maximum of ${listingLimit} listings for your tier. Upgrade your profile to create more listings.`,
+        'LISTING_LIMIT_REACHED',
+        403
+      )
     }
 
     const body = await request.json()
@@ -134,22 +216,16 @@ export async function POST(request: NextRequest) {
     // Validate listing data
     const validationResult = createListingSchema.safeParse(listingData)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+      return errorResponse('Validation failed', 'VALIDATION_ERROR', 400, validationResult.error.flatten())
     }
 
     // Validate photos
     if (!photos || photos.length < 3) {
-      return NextResponse.json(
-        { error: 'At least 3 photos are required' },
-        { status: 400 }
-      )
+      return errorResponse('At least 3 photos are required', 'VALIDATION_ERROR', 400)
     }
 
     // Create listing with photos
-    const listing = await prisma.listing.create({
+    const rawListing = await prisma.listing.create({
       data: {
         ...validationResult.data,
         landlordId: user.id,
@@ -169,21 +245,28 @@ export async function POST(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: { status: true }
+            }
           },
         },
       },
     })
 
-    return NextResponse.json({ listing }, { status: 201 })
+    // Map response
+    const listing = {
+      ...rawListing,
+      landlord: {
+        ...rawListing.landlord,
+        verificationStatus: rawListing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
+
+    logger.info('New listing created', { listingId: listing.id, userId: user.id })
+    return successResponse({ listing }, 201)
   } catch (error) {
-    console.error('Create listing error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create listing', code: 'LISTING_CREATE_ERROR' },
-      { status: 500 }
-    )
+    logger.error('Failed to create listing', error)
+    return handleAPIError(error)
   }
 }
-
-
-

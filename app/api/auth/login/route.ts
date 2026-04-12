@@ -1,5 +1,5 @@
 // Login API route for VerifiedNyumba
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/app/lib/prisma'
 import {
   comparePassword,
@@ -9,6 +9,8 @@ import {
   setAuthCookies,
 } from '@/app/lib/auth'
 import { loginSchema } from '@/app/lib/validations/auth'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +19,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = loginSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+      return errorResponse('Validation failed', 'VALIDATION_ERROR', 400, validationResult.error.flatten())
     }
 
     const { email, password } = validationResult.data
@@ -31,19 +30,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
+      return errorResponse('Invalid email or password', 'AUTHENTICATION_ERROR', 401)
     }
 
     // Verify password
     const isPasswordValid = await comparePassword(password, user.password)
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
+      return errorResponse('Invalid email or password', 'AUTHENTICATION_ERROR', 401)
     }
 
     // Generate tokens
@@ -72,16 +65,15 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user
 
-    return NextResponse.json({
+    logger.info('User logged in', { userId: user.id, role: user.role })
+
+    return successResponse({
       message: 'Login successful',
       user: userWithoutPassword,
     })
   } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred during login' },
-      { status: 500 }
-    )
+    logger.error('Login error', error)
+    return handleAPIError(error)
   }
 }
 

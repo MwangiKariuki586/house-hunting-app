@@ -14,15 +14,58 @@ import {
 import { Button } from "@/app/components/ui/button";
 import { PropertyCard } from "@/app/components/cards/PropertyCard";
 
+import { prisma } from "@/app/lib/prisma";
+import { getCurrentUser } from "@/app/lib/auth";
+import { FeaturedListings } from "@/app/components/home/FeaturedListings";
+import { LandlordGate } from "@/app/components/home/LandlordGate";
+
 // Import data from centralized data files
 import {
-  featuredProperties,
   services,
   stats,
   whyChooseUs,
 } from "@/app/lib/data";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const currentUser = await getCurrentUser();
+  
+  // Fetch real featured listings (top 12 active ones)
+  const listingsData = await prisma.listing.findMany({
+    where: {
+      status: "ACTIVE",
+    },
+    orderBy: {
+      viewCount: "desc", // Default to most viewed for "featured"
+    },
+    take: 12,
+    include: {
+      photos: true,
+      landlord: {
+        include: {
+          landlordVerification: true,
+        },
+      },
+    },
+  });
+
+  // Map to component interface
+  const listings = listingsData.map((listing) => ({
+    id: listing.id,
+    title: listing.title,
+    area: listing.area,
+    estate: listing.estate,
+    propertyType: listing.propertyType,
+    monthlyRent: listing.monthlyRent,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+    // sqft not in DB, calculated in component or omitted
+    parking: listing.parking,
+    photos: listing.photos.map(p => ({ url: p.url, isMain: p.isMain })),
+    isVerifiedLandlord: listing.landlord.landlordVerification?.status === "VERIFIED",
+    viewCount: listing.viewCount,
+    createdAt: listing.createdAt,
+  }));
+
   return (
     <div>
       {/* Hero Section */}
@@ -100,56 +143,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Property Rentals Section */}
-      <section className="py-20 lg:py-28">
-        <div className="container mx-auto px-4">
-          {/* Section Header */}
-          <div className="mb-12 flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-end">
-            <div>
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
-                Featured Listings
-              </p>
-              <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
-                Property Rentals
-              </h2>
-              <p className="mt-3 max-w-xl text-gray-600">
-                Explore our handpicked selection of verified properties across
-                Nairobi&apos;s best neighborhoods.
-              </p>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-2">
-              <Button variant="default" size="sm">
-                Hot Deals
-              </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600">
-                All
-              </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600">
-                Price ↓
-              </Button>
-            </div>
-          </div>
-
-          {/* Property Grid */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProperties.map((property) => (
-              <PropertyCard key={property.id} {...property} variant="grid" />
-            ))}
-          </div>
-
-          {/* View All Link */}
-          <div className="mt-12 text-center">
-            <Link href="/properties">
-              <Button variant="outline" size="lg" className="gap-2">
-                View All Properties
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Property Rentals Section with Featured Listings */}
+      <FeaturedListings initialListings={listings} />
 
       {/* Services Section */}
       <section className="bg-[#F9FAFB] py-20 lg:py-28">
@@ -280,13 +275,13 @@ export default function HomePage() {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/properties">
-                  <Button size="lg" className="gap-2">
+                  <Button size="lg" variant="swapFilled" className="gap-2">
                     Browse Properties
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/about">
-                  <Button size="lg" variant="outline">
+                  <Button size="lg" variant="swapOutline">
                     Learn More
                   </Button>
                 </Link>
@@ -369,14 +364,9 @@ export default function HomePage() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/register?role=LANDLORD">
-                  <Button size="lg" variant="accent" className="gap-2">
-                    List Your Property
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <LandlordGate userRole={currentUser?.role} />
                 <Link href="/for-landlords">
-                  <Button size="lg" variant="outline">
+                  <Button size="lg" variant="swapOutline">
                     Learn More
                   </Button>
                 </Link>
@@ -461,11 +451,7 @@ export default function HomePage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/register?role=LANDLORD">
-                  <Button size="lg" variant="outline">
-                    List Your Property
-                  </Button>
-                </Link>
+                <LandlordGate userRole={currentUser?.role} />
               </div>
             </div>
           </div>

@@ -99,6 +99,19 @@ export default function PropertiesPage() {
     searchParams.get("gatedCommunity") === "true"
   );
 
+  const [debouncedMinPrice, setDebouncedMinPrice] = React.useState(minPrice);
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = React.useState(maxPrice);
+
+  // Debounce price changes
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+      setDebouncedMaxPrice(maxPrice);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPrice]);
+
   const fetchListings = React.useCallback(async () => {
     setIsLoading(true);
     try {
@@ -106,8 +119,8 @@ export default function PropertiesPage() {
       if (area) params.set("area", area);
       if (propertyType) params.set("propertyType", propertyType);
       if (buildingType) params.set("buildingType", buildingType);
-      if (minPrice) params.set("minPrice", minPrice);
-      if (maxPrice) params.set("maxPrice", maxPrice);
+      if (debouncedMinPrice) params.set("minPrice", debouncedMinPrice);
+      if (debouncedMaxPrice) params.set("maxPrice", debouncedMaxPrice);
       if (verifiedOnly) params.set("verifiedLandlordOnly", "true");
       if (parking) params.set("parking", "true");
       if (petsAllowed) params.set("petsAllowed", "true");
@@ -118,9 +131,14 @@ export default function PropertiesPage() {
 
       const res = await fetch(`/api/listings?${params.toString()}`);
       if (res.ok) {
-        const data = await res.json();
-        setListings(data.listings);
-        setPagination(data.pagination);
+        const responseData = await res.json();
+        if (responseData.success) {
+          setListings(responseData.data.listings);
+          setPagination(responseData.data.pagination);
+        } else {
+             setListings(responseData.listings || []);
+             setPagination(responseData.pagination || null);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch listings:", error);
@@ -131,8 +149,8 @@ export default function PropertiesPage() {
     area,
     propertyType,
     buildingType,
-    minPrice,
-    maxPrice,
+    debouncedMinPrice,
+    debouncedMaxPrice,
     verifiedOnly,
     parking,
     petsAllowed,
@@ -149,7 +167,7 @@ export default function PropertiesPage() {
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [area, propertyType, buildingType, minPrice, maxPrice, verifiedOnly, parking, petsAllowed, furnished, gatedCommunity, sortBy]);
+  }, [area, propertyType, buildingType, debouncedMinPrice, debouncedMaxPrice, verifiedOnly, parking, petsAllowed, furnished, gatedCommunity, sortBy]);
 
   const applyFilters = () => {
     const params = new URLSearchParams();
@@ -249,7 +267,7 @@ export default function PropertiesPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Sidebar Filters - Desktop */}
-          <aside className="hidden lg:block lg:w-72 flex-shrink-0">
+          <aside className="hidden lg:block lg:w-72 shrink-0">
             <div className="sticky top-24 rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Filters</h2>

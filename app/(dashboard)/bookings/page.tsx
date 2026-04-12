@@ -79,7 +79,7 @@ export default function BookingsPage() {
 
         if (userRes.ok) {
           const userData = await userRes.json();
-          setCurrentUserId(userData.user.id);
+          setCurrentUserId(userData.data?.user?.id || userData.user?.id);
         }
       } catch {
         console.error("Failed to fetch data");

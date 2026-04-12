@@ -41,6 +41,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/app/components/ui/avatar";
+import { ShareModal } from "@/app/components/molecules/share-modal";
 import {
   formatPrice,
   formatDate,
@@ -128,15 +129,23 @@ export default function PropertyDetailPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
   const [error, setError] = React.useState("");
+  const [isPhoneRevealed, setIsPhoneRevealed] = React.useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
+  const [shareUrl, setShareUrl] = React.useState("");
 
   React.useEffect(() => {
     const fetchListing = async () => {
       try {
         const res = await fetch(`/api/listings/${id}`);
         if (res.ok) {
-          const data = await res.json();
-          setListing(data.listing);
-          setIsSaved(data.isSaved);
+          const responseData = await res.json();
+          if (responseData.success) {
+            setListing(responseData.data.listing);
+            setIsSaved(responseData.data.isSaved);
+          } else {
+             setListing(responseData.listing || null);
+             setIsSaved(responseData.isSaved || false);
+          }
         } else if (res.status === 404) {
           setError("Listing not found");
         }
@@ -157,7 +166,8 @@ export default function PropertyDetailPage() {
       if (res.ok) {
         setIsSaved(!isSaved);
       } else if (res.status === 401) {
-        router.push("/login");
+        const currentPath = window.location.pathname;
+        router.push(`/login?callbackUrl=${encodeURIComponent(currentPath)}`);
       }
     } catch {
       console.error("Failed to save listing");
@@ -225,7 +235,7 @@ export default function PropertyDetailPage() {
           {/* Main Content - Left Side */}
           <div className="lg:col-span-2">
             {/* Image Gallery */}
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-gray-100">
+            <div className="relative aspect-16/10 w-full overflow-hidden rounded-3xl bg-gray-100">
               {listing.photos.length > 0 ? (
                 <>
                   <Image
@@ -283,15 +293,21 @@ export default function PropertyDetailPage() {
                   <div className="absolute right-4 top-4 flex gap-2">
                     <button
                       onClick={handleSave}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 ${
+                      className={`cursor-pointer flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 ${
                         isSaved ? "text-red-500" : "text-gray-600"
                       }`}
                     >
                       <Heart
-                        className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
+                        className={` h-5 w-5 ${isSaved ? "fill-current" : ""}`}
                       />
                     </button>
-                    <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-[#1B4D3E] transition-all hover:scale-110">
+                    <button 
+                      onClick={() => {
+                        setShareUrl(window.location.href);
+                        setIsShareModalOpen(true);
+                      }}
+                      className="cursor-pointer flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-[#1B4D3E] transition-all hover:scale-110"
+                    >
                       <Share2 className="h-5 w-5" />
                     </button>
                   </div>
@@ -479,9 +495,8 @@ export default function PropertyDetailPage() {
                   <span className="text-gray-500">/month</span>
                 </div>
 
-                <Button variant="accent" className="w-full mb-4" size="lg">
-                  Contact an Agent
-                </Button>
+                <Button onClick={() => router.push("/coming-soon")} variant="accent" className="w-full mb-4" size="lg">
+Schedule a Visit                </Button>
 
                 {/* Property Type Badges */}
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -562,20 +577,27 @@ export default function PropertyDetailPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Button variant="default" className="w-full gap-2">
+                  <Button onClick={() => router.push("/coming-soon")} variant="default" className="w-full gap-2">
                     <MessageSquare className="h-4 w-4" />
                     Send Message
                   </Button>
-                  <Button variant="outline" className="w-full gap-2">
+                  {/* <Button variant="outline" className="w-full gap-2">
                     <Calendar className="h-4 w-4" />
                     Schedule Viewing
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="ghost"
-                    className="w-full gap-2 text-gray-600"
+                    className="w-full gap-2 text-gray-600 hover:text-[#1B4D3E]"
+                    onClick={() => setIsPhoneRevealed(!isPhoneRevealed)}
                   >
                     <Phone className="h-4 w-4" />
-                    Call Landlord
+                    {isPhoneRevealed ? (
+                      <a href={`tel:${listing.landlord.phone}`} className="font-bold underline">
+                        {listing.landlord.phone}
+                      </a>
+                    ) : (
+                      "Call Landlord"
+                    )}
                   </Button>
                 </div>
               </div>
@@ -595,6 +617,15 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       </div>
+      
+      {listing && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={setIsShareModalOpen}
+          title={listing.title}
+          url={shareUrl}
+        />
+      )}
     </div>
   );
 }

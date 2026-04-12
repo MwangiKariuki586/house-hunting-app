@@ -35,7 +35,11 @@ export async function GET(
             lastName: true,
             avatar: true,
             phone: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: {
+                status: true,
+              },
+            },
           },
         },
         listing: {
@@ -96,6 +100,9 @@ export async function GET(
         otherUser: {
           ...otherUser,
           phone: canSeePhone ? otherUser.phone : null,
+          verificationStatus: isTenant
+            ? conversation.landlord.landlordVerification?.status
+            : null,
         },
         listing: conversation.listing,
         messages: conversation.messages,

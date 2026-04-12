@@ -1,9 +1,6 @@
 /**
  * Prisma seed script for VerifiedNyumba.
  *
- * This script populates the database with sample property listings
- * ranging from bedsitters to 4+ bedrooms across various Kenyan areas.
- *
  * Run with: npx prisma db seed
  */
 
@@ -13,46 +10,15 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 const propertyConfigs = {
-  BEDSITTER: {
-    bedrooms: 0,
-    bathrooms: 1,
-    priceRange: { min: 6000, max: 20000 },
-    depositMultiplier: 1,
-  },
-  STUDIO: {
-    bedrooms: 0,
-    bathrooms: 1,
-    priceRange: { min: 12000, max: 35000 },
-    depositMultiplier: 1,
-  },
-  ONE_BEDROOM: {
-    bedrooms: 1,
-    bathrooms: 1,
-    priceRange: { min: 15000, max: 50000 },
-    depositMultiplier: 1,
-  },
-  TWO_BEDROOM: {
-    bedrooms: 2,
-    bathrooms: 1,
-    priceRange: { min: 25000, max: 80000 },
-    depositMultiplier: 1.5,
-  },
-  THREE_BEDROOM: {
-    bedrooms: 3,
-    bathrooms: 2,
-    priceRange: { min: 40000, max: 150000 },
-    depositMultiplier: 2,
-  },
-  FOUR_PLUS_BEDROOM: {
-    bedrooms: 4,
-    bathrooms: 3,
-    priceRange: { min: 80000, max: 300000 },
-    depositMultiplier: 2,
-  },
+  BEDSITTER: { bedrooms: 0, bathrooms: 1, priceRange: { min: 6000, max: 20000 }, depositMultiplier: 1 },
+  STUDIO: { bedrooms: 0, bathrooms: 1, priceRange: { min: 12000, max: 35000 }, depositMultiplier: 1 },
+  ONE_BEDROOM: { bedrooms: 1, bathrooms: 1, priceRange: { min: 15000, max: 50000 }, depositMultiplier: 1 },
+  TWO_BEDROOM: { bedrooms: 2, bathrooms: 1, priceRange: { min: 25000, max: 80000 }, depositMultiplier: 1.5 },
+  THREE_BEDROOM: { bedrooms: 3, bathrooms: 2, priceRange: { min: 40000, max: 150000 }, depositMultiplier: 2 },
+  FOUR_PLUS_BEDROOM: { bedrooms: 4, bathrooms: 3, priceRange: { min: 80000, max: 300000 }, depositMultiplier: 2 },
 } as const
 
 type PropertyType = keyof typeof propertyConfigs
-
 type BuildingType =
   | 'APARTMENT'
   | 'STANDALONE'
@@ -115,54 +81,12 @@ const estatesByArea: Record<string, string[]> = {
 }
 
 const titlesByType: Record<PropertyType, string[]> = {
-  BEDSITTER: [
-    'Cozy Bedsitter in Prime Location',
-    'Modern Bedsitter with Ensuite',
-    'Spacious Bedsitter Near Amenities',
-    'Budget-Friendly Bedsitter',
-    'Newly Renovated Bedsitter',
-    'Self-Contained Bedsitter Unit',
-  ],
-  STUDIO: [
-    'Modern Studio Apartment',
-    'Executive Studio with Balcony',
-    'Furnished Studio Space',
-    'Contemporary Studio Living',
-    'Stylish Studio Apartment',
-    'Open-Plan Studio Unit',
-  ],
-  ONE_BEDROOM: [
-    'Elegant 1 Bedroom Apartment',
-    'Modern 1BR with Master Ensuite',
-    'Spacious 1 Bedroom Unit',
-    'Newly Built 1 Bedroom Flat',
-    'Cozy 1BR Near Shopping Center',
-    'Executive 1 Bedroom Apartment',
-  ],
-  TWO_BEDROOM: [
-    'Stunning 2 Bedroom Apartment',
-    'Family-Friendly 2BR Unit',
-    'Modern 2 Bedroom with DSQ',
-    'Spacious 2BR Master Ensuite',
-    'Well-Finished 2 Bedroom Flat',
-    'Executive 2BR Apartment',
-  ],
-  THREE_BEDROOM: [
-    'Luxurious 3 Bedroom Apartment',
-    'Executive 3BR with DSQ',
-    'Spacious 3 Bedroom Family Home',
-    'Modern 3BR All Ensuite',
-    'Premium 3 Bedroom Unit',
-    'Beautiful 3BR with Garden',
-  ],
-  FOUR_PLUS_BEDROOM: [
-    'Grand 4 Bedroom Mansion',
-    'Exclusive 4BR Family Home',
-    'Palatial 4 Bedroom Villa',
-    'Stunning 4BR All Ensuite',
-    'Executive 4+ Bedroom Residence',
-    'Luxury 5 Bedroom Maisonette',
-  ],
+  BEDSITTER: ['Cozy Bedsitter in Prime Location', 'Modern Bedsitter with Ensuite', 'Spacious Bedsitter Near Amenities', 'Budget-Friendly Bedsitter', 'Newly Renovated Bedsitter', 'Self-Contained Bedsitter Unit'],
+  STUDIO: ['Modern Studio Apartment', 'Executive Studio with Balcony', 'Furnished Studio Space', 'Contemporary Studio Living', 'Stylish Studio Apartment', 'Open-Plan Studio Unit'],
+  ONE_BEDROOM: ['Elegant 1 Bedroom Apartment', 'Modern 1BR with Master Ensuite', 'Spacious 1 Bedroom Unit', 'Newly Built 1 Bedroom Flat', 'Cozy 1BR Near Shopping Center', 'Executive 1 Bedroom Apartment'],
+  TWO_BEDROOM: ['Stunning 2 Bedroom Apartment', 'Family-Friendly 2BR Unit', 'Modern 2 Bedroom with DSQ', 'Spacious 2BR Master Ensuite', 'Well-Finished 2 Bedroom Flat', 'Executive 2BR Apartment'],
+  THREE_BEDROOM: ['Luxurious 3 Bedroom Apartment', 'Executive 3BR with DSQ', 'Spacious 3 Bedroom Family Home', 'Modern 3BR All Ensuite', 'Premium 3 Bedroom Unit', 'Beautiful 3BR with Garden'],
+  FOUR_PLUS_BEDROOM: ['Grand 4 Bedroom Mansion', 'Exclusive 4BR Family Home', 'Palatial 4 Bedroom Villa', 'Stunning 4BR All Ensuite', 'Executive 4+ Bedroom Residence', 'Luxury 5 Bedroom Maisonette'],
 }
 
 const descriptionTemplates = [
@@ -172,57 +96,15 @@ const descriptionTemplates = [
   `Experience comfortable living in this lovely {propertyType} situated in {area}, {estate}. The unit boasts a modern design with quality fixtures and fittings. Features include tiled floors, built-in wardrobes, and a fully fitted kitchen. The gated compound offers security, ample parking, and a serene living environment. Great for {audience} seeking a peaceful neighborhood.`,
 ]
 
-const amenitiesPool = [
-  'WiFi Ready',
-  'DSTV Ready',
-  'Hot Shower',
-  'Balcony',
-  'CCTV',
-  'Security Guard',
-  'Backup Generator',
-  'Water Tank',
-  'Laundry Area',
-  'Intercom',
-  'Borehole',
-  'Gym',
-  'Swimming Pool',
-  'Playground',
-  'Rooftop Access',
-  'Lift/Elevator',
-  'Solar Panels',
-]
+const amenitiesPool = ['WiFi Ready', 'DSTV Ready', 'Hot Shower', 'Balcony', 'CCTV', 'Security Guard', 'Backup Generator', 'Water Tank', 'Laundry Area', 'Intercom', 'Borehole', 'Gym', 'Swimming Pool', 'Playground', 'Rooftop Access', 'Lift/Elevator', 'Solar Panels']
 
 const photosByType: Record<PropertyType, string[]> = {
-  BEDSITTER: [
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-  ],
-  STUDIO: [
-    'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800',
-    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
-    'https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800',
-  ],
-  ONE_BEDROOM: [
-    'https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800',
-    'https://images.unsplash.com/photo-1560185127-6a8c5c38dbd3?w=800',
-    'https://images.unsplash.com/photo-1560185008-c5bc60a9d814?w=800',
-  ],
-  TWO_BEDROOM: [
-    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
-    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800',
-  ],
-  THREE_BEDROOM: [
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
-    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800',
-    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800',
-  ],
-  FOUR_PLUS_BEDROOM: [
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
-    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800',
-    'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800',
-  ],
+  BEDSITTER: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800', 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800', 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'],
+  STUDIO: ['https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800', 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800', 'https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800'],
+  ONE_BEDROOM: ['https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800', 'https://images.unsplash.com/photo-1560185127-6a8c5c38dbd3?w=800', 'https://images.unsplash.com/photo-1560185008-c5bc60a9d814?w=800'],
+  TWO_BEDROOM: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800', 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800'],
+  THREE_BEDROOM: ['https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800', 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800', 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800'],
+  FOUR_PLUS_BEDROOM: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800', 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800', 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800'],
 }
 
 function randomInt(min: number, max: number): number {
@@ -246,16 +128,10 @@ function roundToNearest(value: number, nearest: number): number {
 function generatePrice(propertyType: PropertyType, areaMultiplier: number): number {
   const config = propertyConfigs[propertyType]
   const basePrice = randomInt(config.priceRange.min, config.priceRange.max)
-  const adjustedPrice = basePrice * areaMultiplier
-  return roundToNearest(adjustedPrice, 500)
+  return roundToNearest(basePrice * areaMultiplier, 500)
 }
 
-function generateDescription(
-  propertyType: string,
-  area: string,
-  estate: string,
-  bedrooms: number
-): string {
+function generateDescription(propertyType: string, area: string, estate: string, bedrooms: number): string {
   const template = randomChoice(descriptionTemplates)
   const audience = bedrooms >= 2 ? 'families' : 'working professionals or students'
 
@@ -269,8 +145,8 @@ function generateDescription(
 async function main() {
   console.log('Starting VerifiedNyumba database seed...\n')
 
-  console.log('Cleaning existing data...')
   await prisma.$transaction([
+    prisma.passwordResetToken.deleteMany(),
     prisma.viewingBooking.deleteMany(),
     prisma.message.deleteMany(),
     prisma.conversation.deleteMany(),
@@ -279,15 +155,14 @@ async function main() {
     prisma.report.deleteMany(),
     prisma.viewingSlot.deleteMany(),
     prisma.listingPhoto.deleteMany(),
+    prisma.landlordVerification.deleteMany(),
     prisma.verificationDoc.deleteMany(),
     prisma.refreshToken.deleteMany(),
     prisma.newsletter.deleteMany(),
     prisma.listing.deleteMany(),
     prisma.user.deleteMany(),
   ])
-  console.log('Existing data cleared\n')
 
-  console.log('Creating sample landlords...')
   const landlords = []
   const landlordData = [
     { firstName: 'James', lastName: 'Mwangi', phone: '+254700000001', email: 'james.mwangi@example.com', verified: true },
@@ -311,15 +186,20 @@ async function main() {
         role: 'LANDLORD',
         emailVerified: true,
         phoneVerified: true,
-        verificationStatus: data.verified ? 'VERIFIED' : 'PENDING',
-        verifiedAt: data.verified ? new Date() : null,
+        landlordVerification: {
+          create: {
+            status: data.verified ? 'VERIFIED' : 'PENDING',
+            tier: data.verified ? 'FULLY_VERIFIED' : 'BASIC',
+            idVerified: data.verified,
+            propertyVerified: data.verified,
+            verifiedAt: data.verified ? new Date() : null,
+          },
+        },
       },
     })
     landlords.push(landlord)
   }
-  console.log(`Created ${landlords.length} landlords\n`)
 
-  console.log('Creating sample tenant...')
   await prisma.user.create({
     data: {
       email: 'tenant@example.com',
@@ -332,9 +212,7 @@ async function main() {
       phoneVerified: true,
     },
   })
-  console.log('Created sample tenant\n')
 
-  console.log('Generating property listings...')
   const propertyTypes: PropertyType[] = [
     'BEDSITTER',
     'STUDIO',
@@ -348,15 +226,12 @@ async function main() {
 
   for (const propertyType of propertyTypes) {
     const listingsCount = randomInt(10, 15)
-    console.log(`  Creating ${listingsCount} ${propertyType.replace('_', ' ')} listings...`)
 
     for (let i = 0; i < listingsCount; i++) {
       const area = randomChoice(areas)
-      const estates = estatesByArea[area.name] || ['Main Estate']
-      const estate = randomChoice(estates)
+      const estate = randomChoice(estatesByArea[area.name] || ['Main Estate'])
       const config = propertyConfigs[propertyType]
       const landlord = randomChoice(landlords)
-
       const monthlyRent = generatePrice(propertyType, area.priceMultiplier)
       const deposit = roundToNearest(monthlyRent * config.depositMultiplier, 500)
 
@@ -368,7 +243,6 @@ async function main() {
       } else {
         validBuildingTypes = ['APARTMENT', 'STANDALONE', 'BUNGALOW', 'TOWNHOUSE']
       }
-      const buildingType = randomChoice(validBuildingTypes)
 
       const listing = await prisma.listing.create({
         data: {
@@ -384,7 +258,7 @@ async function main() {
           distanceToCBD: Math.round((Math.abs(area.lat + 1.2921) + Math.abs(area.lng - 36.8219)) * 50 * 10) / 10,
           distanceToStage: Math.round(Math.random() * 2 * 10) / 10,
           propertyType,
-          buildingType,
+          buildingType: randomChoice(validBuildingTypes),
           bedrooms: config.bedrooms,
           bathrooms: config.bathrooms,
           monthlyRent,
@@ -406,15 +280,14 @@ async function main() {
         },
       })
 
-      const photos = photosByType[propertyType]
-      for (let j = 0; j < photos.length; j++) {
+      for (const [index, photo] of photosByType[propertyType].entries()) {
         await prisma.listingPhoto.create({
           data: {
             listingId: listing.id,
-            url: photos[j],
-            publicId: `seed_${listing.id}_${j}`,
-            order: j,
-            isMain: j === 0,
+            url: photo,
+            publicId: `seed_${listing.id}_${index}`,
+            order: index,
+            isMain: index === 0,
           },
         })
       }
@@ -423,16 +296,9 @@ async function main() {
     }
   }
 
-  console.log(`\nCreated ${totalListings} property listings\n`)
-  console.log('Seed Summary:')
-  console.log('================')
-  console.log(`   Landlords: ${landlords.length}`)
-  console.log('   Tenants: 1')
-  console.log(`   Listings: ${totalListings}`)
-  console.log('\nDatabase seeding completed successfully.')
-  console.log('\nLogin credentials:')
-  console.log('   Landlord: james.mwangi@example.com / password123')
-  console.log('   Tenant: tenant@example.com / password123')
+  console.log(`Created ${landlords.length} landlords, 1 tenant, and ${totalListings} listings`)
+  console.log('Landlord login: james.mwangi@example.com / password123')
+  console.log('Tenant login: tenant@example.com / password123')
 }
 
 main()

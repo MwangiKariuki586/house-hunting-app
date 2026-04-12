@@ -1,5 +1,6 @@
 // Dashboard layout for authenticated users
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Header } from "@/app/components/layout/Header";
 import { getCurrentUser } from "@/app/lib/auth";
 
@@ -11,7 +12,10 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    const headersList = await headers();
+    const pathname = headersList.get("x-invoke-path") || "";
+    const redirectUrl = pathname ? `/login?callbackUrl=${encodeURIComponent(pathname)}` : "/login";
+    redirect(redirectUrl);
   }
 
   return (

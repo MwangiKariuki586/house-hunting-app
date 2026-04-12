@@ -1,8 +1,10 @@
 // Single listing API route for VerifiedNyumba
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/auth'
 import { updateListingSchema } from '@/app/lib/validations/listing'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 // Get single listing
 export async function GET(
@@ -24,8 +26,11 @@ export async function GET(
             firstName: true,
             lastName: true,
             avatar: true,
-            verificationStatus: true,
+            phone: true,
             createdAt: true,
+            landlordVerification: {
+              select: { status: true }
+            },
             _count: {
               select: { listings: true },
             },
@@ -54,7 +59,7 @@ export async function GET(
     })
 
     if (!listing) {
-      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+      return errorResponse('Listing not found', 'NOT_FOUND', 404)
     }
 
     // Increment view count
@@ -62,6 +67,16 @@ export async function GET(
       where: { id },
       data: { viewCount: { increment: 1 } },
     })
+
+    // Flatten structure for API compatibility
+    const flattenedListing = {
+      ...listing,
+      landlord: {
+        ...listing.landlord,
+        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
 
     // Check if user has saved this listing
     const user = await getCurrentUser()
@@ -78,13 +93,10 @@ export async function GET(
       isSaved = !!saved
     }
 
-    return NextResponse.json({ listing, isSaved })
+    return successResponse({ listing: flattenedListing, isSaved })
   } catch (error) {
-    console.error('Get listing error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred' },
-      { status: 500 }
-    )
+    logger.error('Get listing error', error)
+    return handleAPIError(error)
   }
 }
 
@@ -98,7 +110,7 @@ export async function PATCH(
     const { id } = await params
 
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return errorResponse('Not authenticated', 'AUTHENTICATION_ERROR', 401)
     }
 
     // Get listing and check ownership
@@ -108,11 +120,11 @@ export async function PATCH(
     })
 
     if (!listing) {
-      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+      return errorResponse('Listing not found', 'NOT_FOUND', 404)
     }
 
     if (listing.landlordId !== user.id && user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+      return errorResponse('Not authorized', 'AUTHORIZATION_ERROR', 403)
     }
 
     const body = await request.json()
@@ -120,10 +132,7 @@ export async function PATCH(
     // Validate update data
     const validationResult = updateListingSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+      return errorResponse('Validation failed', 'VALIDATION_ERROR', 400, validationResult.error.flatten())
     }
 
     // Update listing
@@ -139,19 +148,31 @@ export async function PATCH(
             id: true,
             firstName: true,
             lastName: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: { status: true }
+            },
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            createdAt: true,
           },
         },
       },
     })
 
-    return NextResponse.json({ listing: updated })
+    const flattenedUpdated = {
+      ...updated,
+      landlord: {
+        ...updated.landlord,
+        verificationStatus: updated.landlord.landlordVerification?.status || 'PENDING',
+        landlordVerification: undefined
+      }
+    }
+
+    logger.info('Listing updated', { listingId: id, userId: user.id })
+    return successResponse({ listing: flattenedUpdated })
   } catch (error) {
-    console.error('Update listing error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred' },
-      { status: 500 }
-    )
+    logger.error('Update listing error', error)
+    return handleAPIError(error)
   }
 }
 
@@ -165,7 +186,7 @@ export async function DELETE(
     const { id } = await params
 
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return errorResponse('Not authenticated', 'AUTHENTICATION_ERROR', 401)
     }
 
     // Get listing and check ownership
@@ -175,11 +196,11 @@ export async function DELETE(
     })
 
     if (!listing) {
-      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+      return errorResponse('Listing not found', 'NOT_FOUND', 404)
     }
 
     if (listing.landlordId !== user.id && user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+      return errorResponse('Not authorized', 'AUTHORIZATION_ERROR', 403)
     }
 
     // Soft delete - mark as deleted
@@ -188,13 +209,11 @@ export async function DELETE(
       data: { status: 'DELETED' },
     })
 
-    return NextResponse.json({ message: 'Listing deleted successfully' })
+    logger.info('Listing deleted (soft)', { listingId: id, userId: user.id })
+    return successResponse({ message: 'Listing deleted successfully' })
   } catch (error) {
-    console.error('Delete listing error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred' },
-      { status: 500 }
-    )
+    logger.error('Delete listing error', error)
+    return handleAPIError(error)
   }
 }
 

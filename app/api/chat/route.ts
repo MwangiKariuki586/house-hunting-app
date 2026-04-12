@@ -37,7 +37,11 @@ export async function GET() {
             lastName: true,
             avatar: true,
             phone: true,
-            verificationStatus: true,
+            landlordVerification: {
+              select: {
+                status: true,
+              },
+            },
           },
         },
         listing: {
@@ -72,6 +76,7 @@ export async function GET() {
     // Format conversations
     const formattedConversations = conversations.map((conv) => {
       const otherUser = conv.tenantId === user.id ? conv.landlord : conv.tenant
+      const isTenant = conv.tenantId === user.id
       const canSeePhone =
         (conv.tenantId === user.id && conv.landlordRevealed) ||
         (conv.landlordId === user.id && conv.tenantRevealed)
@@ -81,6 +86,9 @@ export async function GET() {
         otherUser: {
           ...otherUser,
           phone: canSeePhone ? otherUser.phone : null,
+          verificationStatus: isTenant
+            ? conv.landlord.landlordVerification?.status
+            : null,
         },
         listing: conv.listing,
         lastMessage: conv.messages[0] || null,

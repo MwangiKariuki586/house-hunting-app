@@ -23,7 +23,7 @@ export async function GET() {
             },
             landlord: {
               select: {
-                verificationStatus: true,
+                landlordVerification: { select: { status: true } }
               },
             },
           },
@@ -31,10 +31,18 @@ export async function GET() {
       },
     })
 
-    // Filter out deleted listings
-    const activeSaved = saved.filter(
-      (s) => s.listing.status !== 'DELETED'
-    )
+    // Filter out deleted listings and flatten verification status
+    const activeSaved = saved
+      .filter((s) => s.listing.status !== 'DELETED')
+      .map(s => ({
+        ...s,
+        listing: {
+          ...s.listing,
+          landlord: {
+            verificationStatus: s.listing.landlord.landlordVerification?.status || 'PENDING'
+          }
+        }
+      }))
 
     return NextResponse.json({ saved: activeSaved })
   } catch (error) {

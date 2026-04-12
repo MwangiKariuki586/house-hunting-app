@@ -2,10 +2,9 @@
 "use client";
 
 import * as React from "react";
+import { startTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -17,51 +16,34 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
-import { loginSchema, type LoginInput } from "@/app/lib/validations/auth";
+import { loginAction, type LoginState } from "@/app/actions/auth";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "";
+  
   const [showPassword, setShowPassword] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [state, formAction, isPending] = React.useActionState(loginAction, {} as LoginState);
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data: LoginInput) => {
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        setError(result.error || "Login failed");
-        return;
-      }
-
-      // Redirect based on role
-      if (result.user.role === "LANDLORD") {
-        router.push("/dashboard/landlord/listings");
-      } else if (result.user.role === "ADMIN") {
-        router.push("/admin");
-      } else {
-        router.push("/properties");
-      }
-
+  // Handle redirect on successful login
+  React.useEffect(() => {
+    if (state.success && state.redirectTo) {
+      setIsRedirecting(true);
       router.refresh();
-    } catch {
-      setError("An unexpected error occurred");
+      router.push(state.redirectTo);
     }
+  }, [state.success, state.redirectTo, router]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   return (
@@ -73,29 +55,36 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit}>
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <CardContent className="space-y-4">
-          {error && (
+          {state.error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
+              {state.error}
             </div>
           )}
 
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            error={errors.email?.message}
-            {...register("email")}
-          />
+          <div className="space-y-2">
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={state.fieldErrors?.email?.[0]}
+            />
+          </div>
 
-          <div className="relative">
+          <div className="relative space-y-2">
             <Input
               label="Password"
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              error={errors.password?.message}
-              {...register("password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={state.fieldErrors?.password?.[0]}
             />
             <button
               type="button"
@@ -123,11 +112,12 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col gap-4">
           <Button
             type="submit"
-            className="w-full gap-2"
-            isLoading={isSubmitting}
+            className="w-full gap-2 cursor-pointer"
+            isLoading={isPending || isRedirecting}
+            disabled={isPending || isRedirecting}
           >
-            <LogIn className="h-4 w-4" />
-            Sign in
+            {!isPending && !isRedirecting && <LogIn className="h-4 w-4" />}
+            {isRedirecting ? "Redirecting..." : isPending ? "Signing in..." : "Sign in"}
           </Button>
 
           <p className="text-center text-sm text-gray-600">
@@ -142,6 +132,19 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <Card className="w-full max-w-md animate-pulse">
+        <CardHeader className="h-24 bg-gray-100 rounded-t-xl" />
+        <CardContent className="h-64 bg-gray-50" />
+      </Card>
+    }>
+      <LoginForm />
+    </React.Suspense>
   );
 }
 

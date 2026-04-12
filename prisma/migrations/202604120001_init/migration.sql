@@ -8,6 +8,9 @@ CREATE TYPE "UserRole" AS ENUM ('TENANT', 'LANDLORD', 'ADMIN');
 CREATE TYPE "VerificationStatus" AS ENUM ('PENDING', 'UNDER_REVIEW', 'VERIFIED', 'REJECTED');
 
 -- CreateEnum
+CREATE TYPE "ProfileTier" AS ENUM ('BASIC', 'PHONE_VERIFIED', 'ID_VERIFIED', 'FULLY_VERIFIED');
+
+-- CreateEnum
 CREATE TYPE "ListingStatus" AS ENUM ('ACTIVE', 'PAUSED', 'TAKEN', 'DELETED');
 
 -- CreateEnum
@@ -43,15 +46,31 @@ CREATE TABLE "users" (
     "role" "UserRole" NOT NULL DEFAULT 'TENANT',
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "phoneVerified" BOOLEAN NOT NULL DEFAULT false,
-    "verificationStatus" "VerificationStatus" NOT NULL DEFAULT 'PENDING',
-    "verificationNote" TEXT,
-    "verifiedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "lastLoginAt" TIMESTAMP(3),
     "showOnlyDirectListings" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "landlord_verifications" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" "VerificationStatus" NOT NULL DEFAULT 'PENDING',
+    "note" TEXT,
+    "verifiedAt" TIMESTAMP(3),
+    "tier" "ProfileTier" NOT NULL DEFAULT 'BASIC',
+    "completeness" INTEGER NOT NULL DEFAULT 0,
+    "idVerified" BOOLEAN NOT NULL DEFAULT false,
+    "idVerifiedAt" TIMESTAMP(3),
+    "propertyVerified" BOOLEAN NOT NULL DEFAULT false,
+    "propertyVerifiedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "landlord_verifications_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -75,6 +94,18 @@ CREATE TABLE "refresh_tokens" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "password_reset_tokens" (
+    "id" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -249,6 +280,12 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "landlord_verifications_userId_key" ON "landlord_verifications"("userId");
+
+-- CreateIndex
+CREATE INDEX "landlord_verifications_status_idx" ON "landlord_verifications"("status");
+
+-- CreateIndex
 CREATE INDEX "verification_docs_userId_idx" ON "verification_docs"("userId");
 
 -- CreateIndex
@@ -256,6 +293,12 @@ CREATE UNIQUE INDEX "refresh_tokens_token_key" ON "refresh_tokens"("token");
 
 -- CreateIndex
 CREATE INDEX "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "password_reset_tokens_token_key" ON "password_reset_tokens"("token");
+
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_userId_idx" ON "password_reset_tokens"("userId");
 
 -- CreateIndex
 CREATE INDEX "listings_landlordId_idx" ON "listings"("landlordId");
@@ -327,10 +370,16 @@ CREATE INDEX "reports_resolvedBy_idx" ON "reports"("resolvedBy");
 CREATE UNIQUE INDEX "newsletters_email_key" ON "newsletters"("email");
 
 -- AddForeignKey
+ALTER TABLE "landlord_verifications" ADD CONSTRAINT "landlord_verifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "verification_docs" ADD CONSTRAINT "verification_docs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "listings" ADD CONSTRAINT "listings_landlordId_fkey" FOREIGN KEY ("landlordId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -81,7 +81,7 @@ export function Header({ user }: HeaderProps) {
         "sticky top-0 z-50 w-full transition-all duration-300",
         scrolled
           ? "bg-white shadow-md"
-          : "bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+          : "bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/80"
       )}
     >
       <div className="container mx-auto px-4">
@@ -217,15 +217,18 @@ export function Header({ user }: HeaderProps) {
               </>
             ) : (
               <>
-                <Link href="/login" className="hidden md:block">
-                  <Button variant="ghost" className="text-gray-700">
+                <Link 
+                  href={`/login?callbackUrl=${encodeURIComponent(pathname)}`} 
+                  className="hidden md:block"
+                >
+                  <Button variant="ghost" className="text-gray-700 cursor-pointer">
                     Log in
                   </Button>
                 </Link>
-                <Link href="/contact">
+                <Link href="/contact" >
                   <Button
                     variant="accent"
-                    className="shadow-lg shadow-[#1B4D3E]/25"
+                    className="shadow-lg shadow-[#1B4D3E]/25 cursor-pointer"
                   >
                     Contact us
                   </Button>
@@ -270,7 +273,7 @@ export function Header({ user }: HeaderProps) {
               ))}
               {!user && (
                 <Link
-                  href="/login"
+                  href={`/login?callbackUrl=${encodeURIComponent(pathname)}`}
                   className="px-4 py-3 text-base font-medium text-gray-600 hover:text-[#1B4D3E] hover:bg-gray-50 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >

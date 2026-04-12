@@ -62,7 +62,7 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
 // Store refresh token in database
 export async function storeRefreshToken(userId: string, token: string): Promise<void> {
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS)
-  
+
   await prisma.refreshToken.create({
     data: {
       token,
@@ -91,20 +91,20 @@ export async function validateStoredRefreshToken(token: string): Promise<boolean
   const storedToken = await prisma.refreshToken.findUnique({
     where: { token },
   })
-  
+
   if (!storedToken) return false
   if (storedToken.expiresAt < new Date()) {
     await removeRefreshToken(token)
     return false
   }
-  
+
   return true
 }
 
 // Set auth cookies
 export async function setAuthCookies(accessToken: string, refreshToken: string): Promise<void> {
   const cookieStore = await cookies()
-  
+
   cookieStore.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -112,7 +112,7 @@ export async function setAuthCookies(accessToken: string, refreshToken: string):
     maxAge: 15 * 60, // 15 minutes
     path: '/',
   })
-  
+
   cookieStore.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -125,7 +125,7 @@ export async function setAuthCookies(accessToken: string, refreshToken: string):
 // Clear auth cookies
 export async function clearAuthCookies(): Promise<void> {
   const cookieStore = await cookies()
-  
+
   cookieStore.delete('accessToken')
   cookieStore.delete('refreshToken')
 }
@@ -134,12 +134,12 @@ export async function clearAuthCookies(): Promise<void> {
 export async function getCurrentUser() {
   const cookieStore = await cookies()
   const accessToken = cookieStore.get('accessToken')?.value
-  
+
   if (!accessToken) return null
-  
+
   const payload = verifyAccessToken(accessToken)
   if (!payload) return null
-  
+
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: {
@@ -152,13 +152,33 @@ export async function getCurrentUser() {
       role: true,
       emailVerified: true,
       phoneVerified: true,
-      verificationStatus: true,
       showOnlyDirectListings: true,
       createdAt: true,
+      landlordVerification: {
+        select: {
+          status: true,
+          tier: true,
+          completeness: true,
+          idVerified: true,
+          propertyVerified: true,
+          note: true,
+        }
+      }
     },
   })
-  
-  return user
+
+  if (!user) return null
+
+  // Backward compatibility flattening
+  return {
+    ...user,
+    verificationStatus: user.landlordVerification?.status || 'PENDING',
+    profileTier: user.landlordVerification?.tier || 'BASIC',
+    profileCompleteness: user.landlordVerification?.completeness || 0,
+    idVerified: user.landlordVerification?.idVerified || false,
+    propertyOwnerVerified: user.landlordVerification?.propertyVerified || false,
+    verificationNote: user.landlordVerification?.note || null
+  }
 }
 
 // Clean up expired refresh tokens (run periodically)

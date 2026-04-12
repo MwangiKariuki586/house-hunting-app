@@ -9,6 +9,7 @@ import {
   BuildingType,
   ElectricityType,
   ListingStatus,
+  ProfileTier,
   Prisma,
   PrismaClient,
   PropertyType,
@@ -122,8 +123,10 @@ async function resetTargetDatabase() {
     prisma.report.deleteMany(),
     prisma.viewingSlot.deleteMany(),
     prisma.listingPhoto.deleteMany(),
+    prisma.landlordVerification.deleteMany(),
     prisma.verificationDoc.deleteMany(),
     prisma.refreshToken.deleteMany(),
+    prisma.passwordResetToken.deleteMany(),
     prisma.newsletter.deleteMany(),
     prisma.listing.deleteMany(),
     prisma.user.deleteMany(),
@@ -151,6 +154,7 @@ async function main() {
       users,
       verificationDocs,
       refreshTokens,
+      passwordResetTokens,
       listings,
       listingPhotos,
       savedListings,
@@ -165,6 +169,7 @@ async function main() {
       db.collection('users').find({}).toArray(),
       db.collection('verification_docs').find({}).toArray(),
       db.collection('refresh_tokens').find({}).toArray(),
+      db.collection('password_reset_tokens').find({}).toArray(),
       db.collection('listings').find({}).toArray(),
       db.collection('listing_photos').find({}).toArray(),
       db.collection('saved_listings').find({}).toArray(),
@@ -181,6 +186,8 @@ async function main() {
       users: {},
       verification_docs: {},
       refresh_tokens: {},
+      landlord_verifications: {},
+      password_reset_tokens: {},
       listings: {},
       listing_photos: {},
       saved_listings: {},
@@ -208,19 +215,58 @@ async function main() {
         role: toEnumValue(doc.role, UserRole, UserRole.TENANT),
         emailVerified: Boolean(doc.emailVerified),
         phoneVerified: Boolean(doc.phoneVerified),
-        verificationStatus: toEnumValue(
-          doc.verificationStatus,
-          VerificationStatus,
-          VerificationStatus.PENDING
-        ),
-        verificationNote: typeof doc.verificationNote === 'string' ? doc.verificationNote : null,
-        verifiedAt: toDate(doc.verifiedAt) ?? null,
         createdAt: toDate(doc.createdAt) ?? new Date(),
         updatedAt: toDate(doc.updatedAt) ?? new Date(),
         lastLoginAt: toDate(doc.lastLoginAt) ?? null,
         showOnlyDirectListings: Boolean(doc.showOnlyDirectListings),
       }
     })
+
+    const landlordVerificationsByUserId = new Map(
+      (
+        await db.collection('landlord_verifications').find({}).toArray()
+      ).map((doc) => [toIdString(doc.userId), doc])
+    )
+
+    const landlordVerificationsData: Prisma.LandlordVerificationCreateManyInput[] = users
+      .filter((doc) => doc.role === UserRole.LANDLORD)
+      .map((doc) => {
+        const sourceUserId = toIdString(doc._id)
+        const sourceVerification = landlordVerificationsByUserId.get(sourceUserId)
+        const id = randomUUID()
+        idMap.landlord_verifications[sourceUserId] = id
+
+        return {
+          id,
+          userId: getMappedId(idMap, 'users', sourceUserId),
+          status: toEnumValue(
+            sourceVerification?.status ?? doc.verificationStatus,
+            VerificationStatus,
+            VerificationStatus.PENDING
+          ),
+          note:
+            typeof sourceVerification?.note === 'string'
+              ? sourceVerification.note
+              : typeof doc.verificationNote === 'string'
+                ? doc.verificationNote
+                : null,
+          verifiedAt:
+            toDate(sourceVerification?.verifiedAt) ??
+            toDate(doc.verifiedAt) ??
+            null,
+          tier: toEnumValue(sourceVerification?.tier, ProfileTier, ProfileTier.BASIC),
+          completeness:
+            typeof sourceVerification?.completeness === 'number'
+              ? sourceVerification.completeness
+              : 0,
+          idVerified: Boolean(sourceVerification?.idVerified),
+          idVerifiedAt: toDate(sourceVerification?.idVerifiedAt) ?? null,
+          propertyVerified: Boolean(sourceVerification?.propertyVerified),
+          propertyVerifiedAt: toDate(sourceVerification?.propertyVerifiedAt) ?? null,
+          createdAt: toDate(sourceVerification?.createdAt) ?? new Date(),
+          updatedAt: toDate(sourceVerification?.updatedAt) ?? new Date(),
+        }
+      })
 
     const verificationDocsData: Prisma.VerificationDocCreateManyInput[] = verificationDocs.map((doc) => {
       const id = randomUUID()
@@ -245,6 +291,20 @@ async function main() {
         token: String(doc.token),
         userId: getMappedId(idMap, 'users', doc.userId),
         expiresAt: toDate(doc.expiresAt) ?? new Date(),
+        createdAt: toDate(doc.createdAt) ?? new Date(),
+      }
+    })
+
+    const passwordResetTokensData: Prisma.PasswordResetTokenCreateManyInput[] = passwordResetTokens.map((doc) => {
+      const id = randomUUID()
+      idMap.password_reset_tokens[toIdString(doc._id)] = id
+
+      return {
+        id,
+        token: String(doc.token),
+        userId: getMappedId(idMap, 'users', doc.userId),
+        expiresAt: toDate(doc.expiresAt) ?? new Date(),
+        usedAt: toDate(doc.usedAt) ?? null,
         createdAt: toDate(doc.createdAt) ?? new Date(),
       }
     })
@@ -441,8 +501,10 @@ async function main() {
     await prisma.$transaction([
       prisma.user.createMany({ data: usersData }),
       prisma.newsletter.createMany({ data: newslettersData }),
+      prisma.landlordVerification.createMany({ data: landlordVerificationsData }),
       prisma.verificationDoc.createMany({ data: verificationDocsData }),
       prisma.refreshToken.createMany({ data: refreshTokensData }),
+      prisma.passwordResetToken.createMany({ data: passwordResetTokensData }),
       prisma.listing.createMany({ data: listingsData }),
       prisma.listingPhoto.createMany({ data: listingPhotosData }),
       prisma.savedListing.createMany({ data: savedListingsData }),
@@ -456,8 +518,10 @@ async function main() {
 
     const summary = {
       users: usersData.length,
+      landlordVerifications: landlordVerificationsData.length,
       verificationDocs: verificationDocsData.length,
       refreshTokens: refreshTokensData.length,
+      passwordResetTokens: passwordResetTokensData.length,
       listings: listingsData.length,
       listingPhotos: listingPhotosData.length,
       savedListings: savedListingsData.length,

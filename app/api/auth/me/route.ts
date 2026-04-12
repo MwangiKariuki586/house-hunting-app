@@ -1,25 +1,20 @@
 // Get current user API route for VerifiedNyumba
-import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/app/lib/auth'
+import { successResponse, errorResponse, handleAPIError } from '@/app/lib/api-response'
+import { logger } from '@/app/lib/logger'
 
 export async function GET() {
   try {
     const user = await getCurrentUser()
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return errorResponse('Not authenticated', 'AUTHENTICATION_ERROR', 401)
     }
 
-    return NextResponse.json({ user })
+    return successResponse({ user })
   } catch (error) {
-    console.error('Get current user error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred' },
-      { status: 500 }
-    )
+    logger.error('Get current user error', error)
+    return handleAPIError(error)
   }
 }
 

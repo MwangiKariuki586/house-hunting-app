@@ -18,22 +18,9 @@ export const uploadOptions = {
     transformation: [
       { width: 1200, height: 800, crop: 'limit' },
       { quality: 'auto:good' },
-      {
-        overlay: {
-          font_family: 'Arial',
-          font_size: 24,
-          font_weight: 'bold',
-          text: `VerifiedNyumba - ${new Date().toLocaleDateString('en-KE')}`,
-        },
-        gravity: 'south_east',
-        x: 10,
-        y: 10,
-        color: 'white',
-        opacity: 70,
-      },
     ],
   },
-  
+
   // Verification documents (no public access)
   verificationDoc: {
     folder: 'verifiednyumba/verification',
@@ -43,7 +30,7 @@ export const uploadOptions = {
       { quality: 'auto:good' },
     ],
   },
-  
+
   // User avatars
   avatar: {
     folder: 'verifiednyumba/avatars',
@@ -53,7 +40,7 @@ export const uploadOptions = {
       { radius: 'max' },
     ],
   },
-  
+
   // Report evidence
   reportEvidence: {
     folder: 'verifiednyumba/reports',
@@ -70,7 +57,7 @@ export async function uploadImage(
     ...uploadOptions[options],
     resource_type: 'image',
   })
-  
+
   return {
     url: result.secure_url,
     publicId: result.public_id,
@@ -89,7 +76,7 @@ export async function uploadVideo(
       { quality: 'auto:good' },
     ],
   })
-  
+
   return {
     url: result.secure_url,
     publicId: result.public_id,
@@ -109,11 +96,11 @@ export async function deleteResource(
 // Generate thumbnail URL
 export function getThumbnailUrl(url: string, width = 400, height = 300): string {
   if (!url.includes('cloudinary.com')) return url
-  
+
   // Insert transformation into Cloudinary URL
   const parts = url.split('/upload/')
   if (parts.length !== 2) return url
-  
+
   return `${parts[0]}/upload/w_${width},h_${height},c_fill/${parts[1]}`
 }
 

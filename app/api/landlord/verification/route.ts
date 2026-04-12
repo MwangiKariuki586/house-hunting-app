@@ -16,11 +16,18 @@ export async function GET() {
     }
 
     // Get user with verification documents
-    const userData = await prisma.user.findUnique({
+    const data = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        verificationStatus: true,
-        verificationNote: true,
+        landlordVerification: {
+          select: {
+            status: true,
+            note: true,
+            idVerified: true,
+            propertyVerified: true,
+            tier: true,
+          }
+        },
         verificationDocs: {
           select: {
             type: true,
@@ -31,14 +38,18 @@ export async function GET() {
       },
     })
 
-    if (!userData) {
+    if (!data) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     return NextResponse.json({
-      status: userData.verificationStatus,
-      note: userData.verificationNote,
-      documents: userData.verificationDocs,
+      status: data.landlordVerification?.status || 'PENDING',
+      note: data.landlordVerification?.note,
+      documents: data.verificationDocs,
+      idVerified: data.landlordVerification?.idVerified || false,
+      propertyOwnerVerified: data.landlordVerification?.propertyVerified || false,
+      profileTier: data.landlordVerification?.tier || 'BASIC',
+      phoneVerified: user.phoneVerified,
     })
   } catch (error) {
     console.error('Get verification status error:', error)
