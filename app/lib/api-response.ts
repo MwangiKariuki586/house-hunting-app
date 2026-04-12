@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
+import { getSafeApiErrorMessage } from './client-error'
 
 type ErrorCode =
     | 'VALIDATION_ERROR'
@@ -72,8 +73,16 @@ export function handleAPIError(error: unknown) {
     }
 
     if (error instanceof Error) {
-        return errorResponse(error.message, 'INTERNAL_SERVER_ERROR', 500)
+        return errorResponse(
+            getSafeApiErrorMessage(error),
+            'INTERNAL_SERVER_ERROR',
+            500
+        )
     }
 
-    return errorResponse('An unexpected error occurred', 'INTERNAL_SERVER_ERROR', 500)
+    return errorResponse(
+        'An unexpected error occurred. Please try again.',
+        'INTERNAL_SERVER_ERROR',
+        500
+    )
 }

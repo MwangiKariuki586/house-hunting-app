@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { formatErrorForClient } from "@/app/lib/client-error";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -24,6 +25,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     // Log the error to an error reporting service
     console.error("Global application error:", error);
   }, [error]);
+
+  const presentation = formatErrorForClient(error);
 
   return (
     <html lang="en">
@@ -46,15 +49,13 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               className="mb-2 text-3xl font-bold"
               style={{ color: "#111827" }}
             >
-              Oops! Something went wrong
+              {presentation.title}
             </h1>
             <p className="mb-8" style={{ color: "#6b7280" }}>
-              We&apos;re sorry, but something unexpected happened. Our team has
-              been notified and is working to fix the issue.
+              {presentation.message}
             </p>
 
-            {/* Error Details (only in development) */}
-            {process.env.NODE_ENV === "development" && error.message && (
+            {process.env.NODE_ENV === "development" && presentation.referenceId && (
               <div
                 className="mb-8 rounded-lg p-4 text-left"
                 style={{ backgroundColor: "#f3f4f6" }}
@@ -63,19 +64,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                   className="text-xs font-medium mb-1"
                   style={{ color: "#6b7280" }}
                 >
-                  Error Details:
+                  Reference ID:
                 </p>
                 <p
                   className="text-sm font-mono break-all"
                   style={{ color: "#374151" }}
                 >
-                  {error.message}
+                  {presentation.referenceId}
                 </p>
-                {error.digest && (
-                  <p className="mt-2 text-xs" style={{ color: "#6b7280" }}>
-                    Digest: {error.digest}
-                  </p>
-                )}
               </div>
             )}
 

@@ -14,6 +14,7 @@ import * as React from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
+import { formatErrorForClient } from "@/app/lib/client-error";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -26,6 +27,8 @@ export default function AuthError({ error, reset }: ErrorProps) {
     console.error("Auth route error:", error);
   }, [error]);
 
+  const presentation = formatErrorForClient(error);
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
       <div className="max-w-md w-full text-center">
@@ -36,27 +39,20 @@ export default function AuthError({ error, reset }: ErrorProps) {
 
         {/* Error Message */}
         <h1 className="mb-2 text-2xl font-bold text-gray-900">
-          Authentication Error
+          {presentation.title}
         </h1>
         <p className="mb-6 text-gray-600">
-          We had trouble loading the authentication page. Please try again or
-          return to the homepage.
+          {presentation.message}
         </p>
 
-        {/* Error Details (only in development) */}
-        {process.env.NODE_ENV === "development" && error.message && (
+        {process.env.NODE_ENV === "development" && presentation.referenceId && (
           <div className="mb-6 rounded-lg bg-gray-100 p-4 text-left">
             <p className="text-xs font-medium text-gray-500 mb-1">
-              Error Details:
+              Reference ID:
             </p>
             <p className="text-sm text-gray-700 font-mono break-all">
-              {error.message}
+              {presentation.referenceId}
             </p>
-            {error.digest && (
-              <p className="mt-2 text-xs text-gray-500">
-                Digest: {error.digest}
-              </p>
-            )}
           </div>
         )}
 

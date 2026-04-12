@@ -51,6 +51,6 @@ describe('API Response Utilities', () => {
 
         expect(response.status).toBe(500)
         expect(json.error.code).toBe('INTERNAL_SERVER_ERROR')
-        expect(json.error.message).toBe('Database connection failed')
+        expect(json.error.message).toBe('We are having trouble loading data right now. Please try again shortly.')
     })
 })
