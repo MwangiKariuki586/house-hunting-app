@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Parse filters
     const filters = listingFilterSchema.parse({
+      county: searchParams.get('county') || undefined,
       area: searchParams.get('area') || undefined,
       propertyType: searchParams.get('propertyType') || undefined,
       buildingType: searchParams.get('buildingType') || undefined,
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
       status: 'ACTIVE',
     }
 
+    if (filters.county) where.county = filters.county
     if (filters.area) where.area = filters.area
     if (filters.propertyType) where.propertyType = filters.propertyType
     if (filters.buildingType) where.buildingType = filters.buildingType
@@ -108,14 +110,17 @@ export async function GET(request: NextRequest) {
     })
 
     // Flatten structure for API compatibility
-    const listings = rawListings.map(listing => ({
-      ...listing,
+    const listings = rawListings.map(listing => {
+      const { isDemo: _isDemo, ...publicListing } = listing
+      void _isDemo
+      return {
+      ...publicListing,
       landlord: {
-        ...listing.landlord,
-        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        ...publicListing.landlord,
+        verificationStatus: publicListing.landlord.landlordVerification?.status || 'PENDING',
         landlordVerification: undefined
       }
-    }))
+    }})
 
     return successResponse({
       listings,
@@ -254,11 +259,13 @@ export async function POST(request: NextRequest) {
     })
 
     // Map response
+    const { isDemo: _isDemo, ...publicListing } = rawListing
+    void _isDemo
     const listing = {
-      ...rawListing,
+      ...publicListing,
       landlord: {
-        ...rawListing.landlord,
-        verificationStatus: rawListing.landlord.landlordVerification?.status || 'PENDING',
+        ...publicListing.landlord,
+        verificationStatus: publicListing.landlord.landlordVerification?.status || 'PENDING',
         landlordVerification: undefined
       }
     }

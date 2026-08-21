@@ -11,7 +11,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Mail,
-  Phone,
   MapPin,
   Clock,
   Send,
@@ -36,12 +35,6 @@ const contactInfo = [
     label: "Email",
     value: "hello@verifiednyumba.co.ke",
     href: "mailto:hello@verifiednyumba.co.ke",
-  },
-  {
-    icon: Phone,
-    label: "Phone",
-    value: "+254 700 000 000",
-    href: "tel:+254700000000",
   },
   {
     icon: MapPin,
@@ -180,8 +173,7 @@ export default function ContactPage() {
                     Message Sent!
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Thank you for reaching out. We&apos;ll get back to you
-                    within 24 hours.
+                    Thank you for reaching out. Your message has been received.
                   </p>
                   <Button onClick={() => setSubmitted(false)} variant="outline">
                     Send Another Message

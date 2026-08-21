@@ -17,7 +17,6 @@ import {
   Share2,
   Flag,
   MessageSquare,
-  Calendar,
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
@@ -77,6 +76,7 @@ interface Listing {
   title: string;
   description: string;
   status: string;
+  county: string;
   area: string;
   estate: string | null;
   landmark: string | null;
@@ -89,6 +89,7 @@ interface Listing {
   buildingType: string;
   bedrooms: number;
   bathrooms: number;
+  floorAreaSqM: number | null;
   monthlyRent: number;
   deposit: number;
   serviceCharge: number;
@@ -214,8 +215,8 @@ export default function PropertyDetailPage() {
   const moveInCost = calculateMoveInCost(listing);
   const isVerified = listing.landlord.verificationStatus === "VERIFIED";
   const location = listing.estate
-    ? `${listing.estate}, ${listing.area}`
-    : listing.area;
+    ? `${listing.estate}, ${listing.area}, ${listing.county}`
+    : `${listing.area}, ${listing.county}`;
 
   return (
     <div className="pb-20">
@@ -359,11 +360,13 @@ export default function PropertyDetailPage() {
                 </p>
                 <p className="text-xs text-gray-500">Bathrooms</p>
               </div>
-              <div className="flex flex-col items-center rounded-2xl bg-gray-50 p-4">
-                <Maximize className="mb-2 h-6 w-6 text-[#1B4D3E]" />
-                <p className="text-lg font-bold text-gray-900">1,200</p>
-                <p className="text-xs text-gray-500">Sqft</p>
-              </div>
+              {listing.floorAreaSqM && (
+                <div className="flex flex-col items-center rounded-2xl bg-gray-50 p-4">
+                  <Maximize className="mb-2 h-6 w-6 text-[#1B4D3E]" />
+                  <p className="text-lg font-bold text-gray-900">{listing.floorAreaSqM}</p>
+                  <p className="text-xs text-gray-500">Square metres</p>
+                </div>
+              )}
               <div className="flex flex-col items-center rounded-2xl bg-gray-50 p-4">
                 <Droplets className="mb-2 h-6 w-6 text-[#1B4D3E]" />
                 <p className="text-sm font-bold text-gray-900">

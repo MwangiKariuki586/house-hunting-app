@@ -12,13 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { kenyanAreas } from "@/app/lib/validations/listing";
+import { areasByCounty, kenyanAreas, kenyanCounties } from "@/app/lib/validations/listing";
 import { propertyTypeLabels, buildingTypeLabels } from "@/app/lib/utils";
 
 export function SearchForm() {
   const router = useRouter();
   const [buildingType, setBuildingType] = React.useState("");
   const [category, setCategory] = React.useState("");
+  const [county, setCounty] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [propertyType, setPropertyType] = React.useState("");
 
@@ -28,6 +29,7 @@ export function SearchForm() {
     const params = new URLSearchParams();
     if (buildingType) params.set("buildingType", buildingType);
     if (category) params.set("category", category);
+    if (county) params.set("county", county);
     if (location) params.set("area", location);
     if (propertyType) params.set("propertyType", propertyType);
 
@@ -76,17 +78,30 @@ export function SearchForm() {
         </Select>
       </div>
 
-      {/* Location */}
+      {/* County */}
       <div className="flex-1">
         <label className="mb-1.5 block text-xs font-medium text-teal-600">
-          Location
+          County
         </label>
-        <Select value={location} onValueChange={setLocation}>
+        <Select value={county} onValueChange={(value) => { setCounty(value); setLocation(""); }}>
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Select area" />
+            <SelectValue placeholder="Select county" />
           </SelectTrigger>
           <SelectContent>
-            {kenyanAreas.slice(0, 20).map((area) => (
+            {kenyanCounties.map((item) => (
+              <SelectItem key={item} value={item}>{item}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Location */}
+      <div className="flex-1">
+        <label className="mb-1.5 block text-xs font-medium text-teal-600">Locality</label>
+        <Select value={location} onValueChange={setLocation}>
+          <SelectTrigger className="bg-white"><SelectValue placeholder="Select area" /></SelectTrigger>
+          <SelectContent>
+            {(county ? [...(areasByCounty[county as keyof typeof areasByCounty] ?? [])] : kenyanAreas).map((area) => (
               <SelectItem key={area} value={area}>
                 {area}
               </SelectItem>

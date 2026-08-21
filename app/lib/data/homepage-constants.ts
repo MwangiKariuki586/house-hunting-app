@@ -6,7 +6,7 @@
  * frequently and are separated here for maintainability.
  */
 
-import { Key, Building2, TrendingUp, Star } from "lucide-react";
+import { Key, Building2, TrendingUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 // ====================
@@ -24,7 +24,7 @@ export const services: Service[] = [
         icon: Key,
         title: "Property Rentals",
         description:
-            "We offer an extensive selection of rental properties, including furnished and unfurnished options, across prime Nairobi locations.",
+            "Browse practical rental options across Nairobi and surrounding commuter towns, with costs and local details shown clearly.",
     },
     {
         icon: Building2,
@@ -38,23 +38,6 @@ export const services: Service[] = [
         description:
             "The Kenyan real estate market offers numerous opportunities. Get expert advice on where and when to invest.",
     },
-];
-
-// ====================
-// Statistics Section
-// ====================
-
-export interface Stat {
-    value: string;
-    label: string;
-    icon?: LucideIcon;
-}
-
-export const stats: Stat[] = [
-    { value: "200+", label: "Properties Listed" },
-    { value: "500+", label: "Happy Tenants" },
-    { value: "50+", label: "Verified Landlords" },
-    { value: "4.9", label: "Average Rating", icon: Star },
 ];
 
 // ====================
@@ -80,11 +63,11 @@ export const whyChooseUs: WhyChooseUsItem[] = [
     {
         title: "Local Expertise",
         description:
-            "Deep knowledge of Nairobi neighborhoods, from Westlands to Kilimani to Karen.",
+            "Useful local detail across Nairobi and surrounding commuter towns, including water and transport access.",
     },
     {
         title: "Client First",
         description:
-            "Our dedicated team ensures you find the perfect home that matches your needs.",
+            "Compare rent, deposits, recurring charges, water arrangements, and transport access before making an inquiry.",
     },
 ];

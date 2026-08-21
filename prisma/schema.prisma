@@ -39,6 +39,7 @@ enum ListingStatus {
 }
 
 enum PropertyType {
+  SINGLE_ROOM
   BEDSITTER
   STUDIO
   ONE_BEDROOM
@@ -192,6 +193,7 @@ model Listing {
   title               String
   description         String
   status              ListingStatus   @default(ACTIVE)
+  county              String          @default("Nairobi")
   area                String
   estate              String?
   landmark            String?
@@ -204,6 +206,7 @@ model Listing {
   buildingType        BuildingType
   bedrooms            Int             @default(1)
   bathrooms           Int             @default(1)
+  floorAreaSqM         Float?
   monthlyRent         Int
   deposit             Int
   serviceCharge       Int             @default(0)
@@ -227,6 +230,7 @@ model Listing {
   dailyRent           Int?
   weeklyRent          Int?
   viewCount           Int             @default(0)
+  isDemo              Boolean         @default(false)
   savedBy             SavedListing[]
   conversations       Conversation[]
   reviews             Review[]
@@ -236,6 +240,8 @@ model Listing {
   updatedAt           DateTime        @updatedAt
 
   @@index([landlordId])
+  @@index([county])
+  @@index([county, area])
   @@index([area])
   @@index([propertyType])
   @@index([monthlyRent])

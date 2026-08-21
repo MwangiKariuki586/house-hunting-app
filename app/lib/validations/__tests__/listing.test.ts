@@ -6,6 +6,7 @@ describe('Listing Validation Schemas', () => {
         const validListing = {
             title: 'Modern Apartment in Kilimani',
             description: 'A beautiful and spacious modern apartment located in the heart of Kilimani. 24/7 security and ample parking.'.padEnd(51, '.'),
+            county: 'Nairobi',
             area: 'Kilimani',
             propertyType: 'TWO_BEDROOM',
             buildingType: 'APARTMENT',
@@ -38,6 +39,16 @@ describe('Listing Validation Schemas', () => {
             const invalidListing = { ...validListing, monthlyRent: 500 }
             const result = createListingSchema.safeParse(invalidListing)
             expect(result.success).toBe(false)
+        })
+
+        it('supports single rooms and measured metric floor area', () => {
+            const result = createListingSchema.safeParse({
+                ...validListing,
+                propertyType: 'SINGLE_ROOM',
+                bedrooms: 0,
+                floorAreaSqM: 12,
+            })
+            expect(result.success).toBe(true)
         })
     })
 })

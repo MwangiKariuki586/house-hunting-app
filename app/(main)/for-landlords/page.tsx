@@ -97,9 +97,9 @@ const comparison = [
 
 // Stats
 const stats = [
-  { value: "50+", label: "Verified Landlords" },
-  { value: "200+", label: "Properties Listed" },
-  { value: "3 Days", label: "Avg. Time to First Inquiry" },
+  { value: "4", label: "Counties Covered" },
+  { value: "16", label: "Localities Represented" },
+  { value: "3", label: "Photos Required" },
   { value: "0%", label: "Commission Fees" },
 ];
 
@@ -112,8 +112,8 @@ export default function ForLandlordsPage() {
       <section className="relative min-h-[600px] overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920"
-            alt="Property owner"
+            src="/images/hero-kenyan-rentals.webp"
+            alt="Rental apartments in Nairobi Metro"
             fill
             className="object-cover"
             priority
@@ -317,48 +317,6 @@ export default function ForLandlordsPage() {
         </div>
       </section>
 
-      {/* Testimonial/Social Proof Section */}
-      <section className="py-20 lg:py-28 bg-[#F9FAFB]">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-8">
-              <div className="inline-flex items-center gap-1 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className="h-6 w-6 text-[#D4A373] fill-[#D4A373]"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <blockquote className="text-2xl font-medium text-gray-900 md:text-3xl">
-                &ldquo;I listed my property on VerifiedNyumba and got my first
-                serious inquiry within 24 hours. The tenant was already
-                verified, which saved me so much time.&rdquo;
-              </blockquote>
-            </div>
-            <div className="flex items-center justify-center gap-4">
-              <div className="relative h-14 w-14 rounded-full overflow-hidden">
-                <Image
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"
-                  alt="James Kimani"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900">James Kimani</p>
-                <p className="text-sm text-gray-500">
-                  Property Owner, Kilimani
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 lg:py-28 bg-white">
         <div className="container mx-auto px-4">
@@ -368,9 +326,8 @@ export default function ForLandlordsPage() {
                 Ready to List Your Property?
               </h2>
               <p className="mx-auto mb-8 max-w-2xl text-gray-600">
-                Join 50+ verified landlords who are already connecting with
-                quality tenants on VerifiedNyumba. It&apos;s free to get
-                started.
+                Prepare a clear, locally relevant listing with transparent
+                charges and property-specific photos. It&apos;s free to get started.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/register?role=LANDLORD">
