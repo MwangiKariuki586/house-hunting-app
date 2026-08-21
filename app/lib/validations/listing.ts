@@ -13,6 +13,7 @@ export const createListingSchema = z.object({
     .max(2000, 'Description is too long'),
 
   // Location
+  county: z.string().min(1, 'County is required').default('Nairobi'),
   area: z.string().min(1, 'Area is required'),
   estate: z.string().optional(),
   landmark: z.string().optional(),
@@ -24,6 +25,7 @@ export const createListingSchema = z.object({
 
   // Property details
   propertyType: z.enum([
+    'SINGLE_ROOM',
     'BEDSITTER',
     'STUDIO',
     'ONE_BEDROOM',
@@ -42,6 +44,7 @@ export const createListingSchema = z.object({
   ]),
   bedrooms: z.number().min(0).max(10).default(1),
   bathrooms: z.number().min(1).max(10).default(1),
+  floorAreaSqM: z.number().min(5).max(1000).nullable().optional(),
 
   // Pricing - All required for transparency
   monthlyRent: z
@@ -80,8 +83,10 @@ export const createListingSchema = z.object({
 export const updateListingSchema = createListingSchema.partial()
 
 export const listingFilterSchema = z.object({
+  county: z.string().optional(),
   area: z.string().optional(),
   propertyType: z.enum([
+    'SINGLE_ROOM',
     'BEDSITTER',
     'STUDIO',
     'ONE_BEDROOM',
@@ -120,30 +125,15 @@ export type UpdateListingInput = z.infer<typeof updateListingSchema>
 export type ListingFilterInput = z.infer<typeof listingFilterSchema>
 
 // Kenyan areas for autocomplete
-export const kenyanAreas = [
-  // Nairobi
-  'Westlands', 'Kilimani', 'Lavington', 'Kileleshwa', 'Hurlingham',
-  'Parklands', 'Highridge', 'Ngara', 'Pangani', 'Eastleigh',
-  'Kasarani', 'Roysambu', 'Githurai', 'Kahawa', 'Zimmerman',
-  'Umoja', 'Buruburu', 'Donholm', 'Embakasi', 'Pipeline',
-  'South B', 'South C', 'Nairobi West', 'Langata', 'Karen',
-  'Rongai', 'Syokimau', 'Mlolongo', 'Kitengela', 'Athi River',
-  'Ruaka', 'Kikuyu', 'Kinoo', 'Uthiru', 'Kawangware',
-  'CBD', 'Upper Hill', 'Industrial Area', 'Mombasa Road',
+export const areasByCounty = {
+  Nairobi: ['Githurai 44', 'Mwiki', 'Pipeline', 'Umoja', 'Njiru', 'Kasarani', 'Zimmerman', 'Kahawa West'],
+  Kiambu: ['Githurai 45', 'Kahawa Wendani', 'Ruiru', 'Kikuyu', 'Kinoo', 'Ruaka'],
+  Kajiado: ['Ongata Rongai', 'Kitengela'],
+  Machakos: ['Syokimau', 'Athi River'],
+} as const
 
-  // Mombasa
-  'Nyali', 'Bamburi', 'Mtwapa', 'Shanzu', 'Kisauni',
-  'Likoni', 'Changamwe', 'Miritini', 'Mikindani',
-
-  // Kisumu
-  'Milimani', 'Mamboleo', 'Nyalenda', 'Kondele', 'Manyatta',
-
-  // Nakuru
-  'Milimani Nakuru', 'Section 58', 'Pipeline Nakuru', 'Shabab',
-
-  // Eldoret
-  'Elgon View', 'Langas', 'Huruma', 'Pioneer',
-]
+export const kenyanCounties = Object.keys(areasByCounty)
+export const kenyanAreas = Object.values(areasByCounty).flat()
 
 // Common amenities
 export const amenitiesList = [

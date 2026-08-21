@@ -69,11 +69,13 @@ export async function GET(
     })
 
     // Flatten structure for API compatibility
+    const { isDemo: _isDemo, ...publicListing } = listing
+    void _isDemo
     const flattenedListing = {
-      ...listing,
+      ...publicListing,
       landlord: {
-        ...listing.landlord,
-        verificationStatus: listing.landlord.landlordVerification?.status || 'PENDING',
+        ...publicListing.landlord,
+        verificationStatus: publicListing.landlord.landlordVerification?.status || 'PENDING',
         landlordVerification: undefined
       }
     }
@@ -159,11 +161,13 @@ export async function PATCH(
       },
     })
 
+    const { isDemo: _isDemo, ...publicUpdated } = updated
+    void _isDemo
     const flattenedUpdated = {
-      ...updated,
+      ...publicUpdated,
       landlord: {
-        ...updated.landlord,
-        verificationStatus: updated.landlord.landlordVerification?.status || 'PENDING',
+        ...publicUpdated.landlord,
+        verificationStatus: publicUpdated.landlord.landlordVerification?.status || 'PENDING',
         landlordVerification: undefined
       }
     }

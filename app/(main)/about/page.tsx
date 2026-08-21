@@ -13,10 +13,10 @@ import {
 import { Button } from "@/app/components/ui/button";
 
 const stats = [
-  { value: "200+", label: "Properties Listed" },
-  { value: "500+", label: "Happy Tenants" },
-  { value: "50+", label: "Verified Landlords" },
-  { value: "15+", label: "Nairobi Areas" },
+  { value: "24", label: "Market-informed rentals" },
+  { value: "18", label: "At KES 25K or less" },
+  { value: "16", label: "Localities represented" },
+  { value: "4", label: "Metro counties" },
 ];
 
 const values = [
@@ -24,13 +24,13 @@ const values = [
     icon: Shield,
     title: "Trust & Transparency",
     description:
-      "Every landlord is verified. Every listing is genuine. No hidden fees or surprises.",
+      "Show rent, deposits, recurring charges, and move-in costs clearly so homes are easier to compare.",
   },
   {
     icon: Heart,
     title: "Client First",
     description:
-      "Your satisfaction is our priority. We're here to help you find your perfect home.",
+      "Build the search around the practical questions Kenyan tenants ask before arranging a viewing.",
   },
   {
     icon: Target,
@@ -42,7 +42,7 @@ const values = [
     icon: BadgeCheck,
     title: "Quality Assurance",
     description:
-      "We personally verify listings to ensure accuracy and prevent scams.",
+      "Give property owners a structured way to provide useful, property-specific information.",
   },
 ];
 
@@ -50,7 +50,7 @@ const whyChooseUs = [
   {
     title: "Why VerifiedNyumba",
     description:
-      "We understand the challenges of house hunting in Nairobi. That's why we built a platform that puts transparency and trust first.",
+      "We understand the challenges of house hunting in Nairobi. That is why the platform puts transparent costs and useful local detail first.",
     features: [
       "Direct landlord connections",
       "Verified property listings",
@@ -61,7 +61,7 @@ const whyChooseUs = [
   {
     title: "Our Promise",
     description:
-      "Every property on our platform goes through a verification process. We check landlord identity and property ownership.",
+      "The product is being built to support landlord identity and property checks before public launch.",
     features: [
       "ID verification for landlords",
       "Property ownership proof",
@@ -72,7 +72,7 @@ const whyChooseUs = [
   {
     title: "Local Expertise",
     description:
-      "Our team knows Nairobi inside out. From Westlands to Kilimani, Karen to Kasarani, we've got you covered.",
+      "The first catalogue focuses on Nairobi and its main commuter towns, with market-informed price bands by locality.",
     features: [
       "Neighborhood guides",
       "Price insights by area",
@@ -83,31 +83,13 @@ const whyChooseUs = [
   {
     title: "Client First Approach",
     description:
-      "We're not just a listing platform. Our dedicated team is here to support you throughout your house-hunting journey.",
+      "Each listing prioritises the information that affects everyday renting and moving costs.",
     features: [
       "Dedicated support team",
       "Viewing coordination",
       "Negotiation assistance",
       "Move-in support",
     ],
-  },
-];
-
-const team = [
-  {
-    name: "Sarah Wanjiku",
-    role: "Founder & CEO",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-  },
-  {
-    name: "James Ochieng",
-    role: "Head of Operations",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-  },
-  {
-    name: "Grace Muthoni",
-    role: "Customer Success",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
   },
 ];
 
@@ -118,8 +100,8 @@ export default function AboutPage() {
       <section className="relative min-h-[700px] overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920"
-            alt="Modern home interior"
+            src="/images/hero-kenyan-rentals.webp"
+            alt="Rental apartments in Nairobi Metro"
             fill
             className="object-cover"
             priority
@@ -167,13 +149,14 @@ export default function AboutPage() {
                   nightmare.
                 </p>
                 <p>
-                  We decided to build something better. A platform where every
-                  landlord is verified, every listing is genuine, and tenants
-                  can find homes directly without middlemen taking a cut.
+                  We decided to build something better: a platform designed for
+                  clear costs, locally relevant details, and direct contact
+                  between tenants and property owners.
                 </p>
                 <p>
-                  Today, we&apos;re proud to have helped hundreds of Kenyans
-                  find their perfect homes. But we&apos;re just getting started.
+                  The current private prototype starts with 24 market-informed
+                  Nairobi Metro rentals so the experience can be tested before
+                  genuine landlord submissions replace them.
                 </p>
               </div>
 
@@ -191,8 +174,8 @@ export default function AboutPage() {
             <div className="relative">
               <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
                 <Image
-                  src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
-                  alt="Modern home"
+                  src="/images/demo-listings/githurai-44-single-room-1.webp"
+                  alt="Everyday rental apartments in Githurai"
                   fill
                   className="object-cover"
                 />
@@ -204,8 +187,8 @@ export default function AboutPage() {
                     <Building2 className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">200+</p>
-                    <p className="text-sm text-gray-500">Properties Listed</p>
+                    <p className="text-2xl font-bold text-gray-900">24</p>
+                    <p className="text-sm text-gray-500">Market-informed rentals</p>
                   </div>
                 </div>
               </div>
@@ -291,39 +274,6 @@ export default function AboutPage() {
                   {stat.value}
                 </p>
                 <p className="mt-2 text-gray-300">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="py-20 lg:py-28">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#D4A373]">
-              Our Team
-            </p>
-            <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
-              Meet the Team
-            </h2>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3 max-w-4xl mx-auto">
-            {team.map((member) => (
-              <div key={member.name} className="text-center">
-                <div className="relative mx-auto mb-6 h-32 w-32 overflow-hidden rounded-full">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {member.name}
-                </h3>
-                <p className="text-sm text-gray-500">{member.role}</p>
               </div>
             ))}
           </div>

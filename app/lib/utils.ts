@@ -70,6 +70,7 @@ export function getInitials(firstName: string, lastName: string): string {
 
 // Property type display names
 export const propertyTypeLabels: Record<string, string> = {
+  SINGLE_ROOM: 'Single Room',
   BEDSITTER: 'Bedsitter',
   STUDIO: 'Studio',
   ONE_BEDROOM: '1 Bedroom',

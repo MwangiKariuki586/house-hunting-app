@@ -5,14 +5,11 @@ import {
   BadgeCheck,
   Users,
   MapPin,
-  Phone,
   ArrowRight,
-  Play,
   Sparkles,
   Building2,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
-import { PropertyCard } from "@/app/components/cards/PropertyCard";
 
 import { prisma } from "@/app/lib/prisma";
 import { getCurrentUser } from "@/app/lib/auth";
@@ -20,45 +17,52 @@ import { FeaturedListings } from "@/app/components/home/FeaturedListings";
 import { LandlordGate } from "@/app/components/home/LandlordGate";
 
 // Import data from centralized data files
-import {
-  services,
-  stats,
-  whyChooseUs,
-} from "@/app/lib/data";
+import { services } from "@/app/lib/data";
 
 export default async function HomePage() {
   const currentUser = await getCurrentUser();
   
-  // Fetch real featured listings (top 12 active ones)
-  const listingsData = await prisma.listing.findMany({
-    where: {
-      status: "ACTIVE",
-    },
-    orderBy: {
-      viewCount: "desc", // Default to most viewed for "featured"
-    },
-    take: 12,
-    include: {
-      photos: true,
-      landlord: {
-        include: {
-          landlordVerification: true,
-        },
+  const [listingsData, activeListingCount, affordableListingCount, locationGroups, verifiedLandlordCount] = await Promise.all([
+    prisma.listing.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { viewCount: "desc" },
+      take: 12,
+      include: {
+        photos: true,
+        landlord: { include: { landlordVerification: true } },
       },
-    },
-  });
+    }),
+    prisma.listing.count({ where: { status: "ACTIVE" } }),
+    prisma.listing.count({ where: { status: "ACTIVE", monthlyRent: { lte: 25_000 } } }),
+    prisma.listing.groupBy({ by: ["county", "area"], where: { status: "ACTIVE" } }),
+    prisma.user.count({
+      where: {
+        role: "LANDLORD",
+        landlordVerification: { status: "VERIFIED" },
+        listings: { some: { status: "ACTIVE" } },
+      },
+    }),
+  ]);
+
+  const homepageStats = [
+    { value: `${activeListingCount}`, label: "Available rentals" },
+    { value: `${affordableListingCount}`, label: "At KES 25K or less" },
+    { value: `${locationGroups.length}`, label: "Localities covered" },
+    { value: `${verifiedLandlordCount}`, label: "Verified landlords" },
+  ];
 
   // Map to component interface
   const listings = listingsData.map((listing) => ({
     id: listing.id,
     title: listing.title,
+    county: listing.county,
     area: listing.area,
     estate: listing.estate,
     propertyType: listing.propertyType,
     monthlyRent: listing.monthlyRent,
     bedrooms: listing.bedrooms,
     bathrooms: listing.bathrooms,
-    // sqft not in DB, calculated in component or omitted
+    floorAreaSqM: listing.floorAreaSqM,
     parking: listing.parking,
     photos: listing.photos.map(p => ({ url: p.url, isMain: p.isMain })),
     isVerifiedLandlord: listing.landlord.landlordVerification?.status === "VERIFIED",
@@ -73,8 +77,8 @@ export default async function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920"
-            alt="Beautiful modern home"
+            src="/images/hero-kenyan-rentals.webp"
+            alt="Everyday rental apartments in Nairobi"
             fill
             className="object-cover"
             priority
@@ -88,7 +92,7 @@ export default async function HomePage() {
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-[#D4A373]" />
               <span className="text-sm">
-                Kenya&apos;s #1 Verified Property Platform
+                Rentals built around everyday Kenyan budgets
               </span>
             </div>
 
@@ -98,8 +102,8 @@ export default async function HomePage() {
             </h1>
 
             <p className="mb-8 text-lg text-gray-200 md:text-xl">
-              Discover verified rental properties directly from landlords. No
-              agents, no hidden fees, just your perfect home waiting for you.
+              Compare clear monthly rent, deposits, water arrangements and
+              transport access across Nairobi and nearby commuter towns.
             </p>
 
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -125,15 +129,12 @@ export default async function HomePage() {
 
             {/* Quick Stats */}
             <div className="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-4">
-              {stats.map((stat) => (
+              {homepageStats.map((stat) => (
                 <div key={stat.label} className="text-center sm:text-left">
                   <div className="flex items-center justify-center gap-1 sm:justify-start">
                     <p className="text-3xl font-bold text-white">
                       {stat.value}
                     </p>
-                    {stat.icon && (
-                      <stat.icon className="h-5 w-5 text-[#D4A373] fill-[#D4A373]" />
-                    )}
                   </div>
                   <p className="text-sm text-gray-300">{stat.label}</p>
                 </div>
@@ -377,7 +378,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Property Banner */}
-      <section className="py-20 lg:py-28 bg-white">
+      {listings[0] && <section className="py-20 lg:py-28 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             {/* Left - Content */}
@@ -386,31 +387,26 @@ export default async function HomePage() {
                 Featured Property
               </p>
               <h2 className="mb-6 text-3xl font-bold text-gray-900 md:text-4xl">
-                Scandinavian Loft Home
+                {listings[0].title}
               </h2>
               <p className="mb-6 text-gray-600 leading-relaxed">
-                Experience modern living in this beautifully designed loft
-                apartment featuring floor-to-ceiling windows, premium finishes,
-                and a private balcony overlooking the city.
+                A practical rental with transparent monthly costs and the
+                property details tenants need before arranging a viewing.
               </p>
 
               <div className="mb-8 flex items-center gap-6 text-gray-700">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-[#1B4D3E]" />
-                  <span>Kilimani, Nairobi</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-[#1B4D3E]" />
-                  <span>+254 700 000 000</span>
+                  <span>{listings[0].area}, {listings[0].county}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-3xl font-bold text-gray-900">KES 65,000</p>
+                  <p className="text-3xl font-bold text-gray-900">KES {listings[0].monthlyRent.toLocaleString()}</p>
                   <p className="text-sm text-gray-500">per month</p>
                 </div>
-                <Link href="/properties/3">
+                <Link href={`/properties/${listings[0].id}`}>
                   <Button size="lg" className="gap-2">
                     Explore Home
                     <ArrowRight className="h-4 w-4" />
@@ -422,15 +418,15 @@ export default async function HomePage() {
             {/* Right - Image */}
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
               <Image
-                src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
-                alt="Scandinavian Loft Home"
+                src={listings[0].photos.find((photo) => photo.isMain)?.url || listings[0].photos[0]?.url || "/images/hero-kenyan-rentals.webp"}
+                alt={listings[0].title}
                 fill
                 className="object-cover"
               />
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* CTA Section */}
       <section className="py-20 lg:py-28 bg-white">

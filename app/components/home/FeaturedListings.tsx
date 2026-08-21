@@ -9,13 +9,14 @@ import { PropertyCard } from "@/app/components/cards/PropertyCard";
 export interface FeaturedListingType {
   id: string;
   title: string;
+  county: string;
   area: string;
   estate?: string | null;
   propertyType: string;
   monthlyRent: number;
   bedrooms: number;
   bathrooms: number;
-  sqft?: number;
+  floorAreaSqM?: number | null;
   parking?: boolean;
   photos: { url: string; isMain: boolean }[];
   isVerifiedLandlord?: boolean;
@@ -78,8 +79,8 @@ export function FeaturedListings({ initialListings }: FeaturedListingsProps) {
               Property Rentals
             </h2>
             <p className="mt-3 max-w-xl text-gray-600">
-              Explore our handpicked selection of verified properties across
-              Nairobi&apos;s best neighborhoods.
+              Compare practical rentals across Nairobi and nearby commuter
+              towns, with clear monthly and move-in costs.
             </p>
           </div>
 
@@ -118,12 +119,10 @@ export function FeaturedListings({ initialListings }: FeaturedListingsProps) {
         {filteredListings.length > 0 ? (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {filteredListings.map((property) => (
-              <PropertyCard 
+              <PropertyCard
                 key={property.id} 
                 {...property} 
-                variant="grid" 
-                // Creating simplified sqft estimate if missing
-                sqft={property.sqft || (property.bedrooms * 250 + 100)} 
+                variant="grid"
               />
             ))}
           </div>

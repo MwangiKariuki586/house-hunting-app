@@ -12,13 +12,14 @@ import { cn, formatPrice } from "@/app/lib/utils";
 interface PropertyCardProps {
   id: string;
   title: string;
+  county?: string;
   area: string;
   estate?: string | null;
   propertyType: string;
   monthlyRent: number;
   bedrooms: number;
   bathrooms: number;
-  sqft?: number;
+  floorAreaSqM?: number | null;
   parking?: boolean;
   parkingSpaces?: number;
   photos: { url: string; isMain: boolean }[];
@@ -32,12 +33,13 @@ interface PropertyCardProps {
 export function PropertyCard({
   id,
   title,
+  county,
   area,
   estate,
   monthlyRent,
   bedrooms,
   bathrooms,
-  sqft = 1200,
+  floorAreaSqM,
   photos,
   isVerifiedLandlord,
   isSaved,
@@ -46,7 +48,8 @@ export function PropertyCard({
   className,
 }: PropertyCardProps) {
   const mainPhoto = photos.find((p) => p.isMain) || photos[0];
-  const location = estate ? `${estate}, ${area}` : area;
+  const locality = estate ? `${estate}, ${area}` : area;
+  const location = county ? `${locality}, ${county}` : locality;
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -138,10 +141,12 @@ export function PropertyCard({
                 <Bath className="h-4 w-4 text-gray-400" />
                 <span>{bathrooms}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Maximize className="h-4 w-4 text-gray-400" />
-                <span>{sqft}</span>
-              </div>
+              {floorAreaSqM && (
+                <div className="flex items-center gap-1.5">
+                  <Maximize className="h-4 w-4 text-gray-400" />
+                  <span>{floorAreaSqM} m²</span>
+                </div>
+              )}
             </div>
             <Button size="sm" variant="accent">
               Contact
@@ -213,10 +218,12 @@ export function PropertyCard({
                 <Bath className="h-4 w-4 text-gray-400" />
                 <span>{bathrooms} Baths</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Maximize className="h-4 w-4 text-gray-400" />
-                <span>{sqft} sqft</span>
-              </div>
+              {floorAreaSqM && (
+                <div className="flex items-center gap-1.5">
+                  <Maximize className="h-4 w-4 text-gray-400" />
+                  <span>{floorAreaSqM} m²</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -305,10 +312,12 @@ export function PropertyCard({
                 <Bath className="h-4 w-4" />
                 <span>{bathrooms} Baths</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Maximize className="h-4 w-4" />
-                <span>{sqft} sqft</span>
-              </div>
+              {floorAreaSqM && (
+                <div className="flex items-center gap-1.5">
+                  <Maximize className="h-4 w-4" />
+                  <span>{floorAreaSqM} m²</span>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold">{formatPrice(monthlyRent)}</p>

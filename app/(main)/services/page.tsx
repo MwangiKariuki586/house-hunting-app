@@ -14,7 +14,6 @@ import {
   Calendar,
   CheckCircle2,
   ArrowRight,
-  Phone,
   Mail,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -24,7 +23,7 @@ const mainServices = [
     icon: Key,
     title: "Property Rentals",
     description:
-      "We offer an extensive selection of rental properties across Nairobi's prime locations. From cozy bedsitters to luxury apartments, find your perfect match.",
+      "Compare practical rentals across Nairobi and nearby commuter towns, from single rooms and bedsitters to family flats.",
     features: [
       "Verified landlords only",
       "Transparent pricing",
@@ -92,10 +91,10 @@ const additionalServices = [
 ];
 
 const stats = [
-  { icon: Home, value: "200+", label: "Properties Listed" },
-  { icon: Users, value: "500+", label: "Happy Tenants" },
-  { icon: Building2, value: "50+", label: "Verified Landlords" },
-  { icon: BarChart3, value: "98%", label: "Satisfaction Rate" },
+  { icon: Home, value: "24", label: "Market-informed rentals" },
+  { icon: Users, value: "18", label: "At KES 25K or less" },
+  { icon: Building2, value: "16", label: "Localities represented" },
+  { icon: BarChart3, value: "4", label: "Metro counties" },
 ];
 
 export default function ServicesPage() {
@@ -105,8 +104,8 @@ export default function ServicesPage() {
       <section className="relative min-h-[500px] overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1920"
-            alt="Modern home"
+            src="/images/hero-kenyan-rentals.webp"
+            alt="Rental apartments in Nairobi Metro"
             fill
             className="object-cover"
             priority
@@ -237,7 +236,7 @@ export default function ServicesPage() {
             <div className="relative">
               <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
                 <Image
-                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"
+                  src="/images/demo-listings/pipeline-two-bedroom-1.webp"
                   alt="Featured property"
                   fill
                   className="object-cover"
@@ -248,14 +247,14 @@ export default function ServicesPage() {
                     Featured Property
                   </p>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    Scandinavian Loft Home
+                    2 Bedroom Flat in Pipeline
                   </h3>
-                  <p className="text-gray-200 mb-4">Kilimani, Nairobi</p>
+                  <p className="text-gray-200 mb-4">Pipeline, Nairobi</p>
                   <div className="flex items-center justify-between">
                     <p className="text-2xl font-bold text-white">
-                      KES 65,000/mo
+                      KES 22,000/mo
                     </p>
-                    <Link href="/properties/3">
+                    <Link href="/properties/10000000-0000-4000-8000-000000000018">
                       <Button variant="accent" className="gap-2">
                         View Details
                         <ArrowRight className="h-4 w-4" />
@@ -350,16 +349,6 @@ export default function ServicesPage() {
       <section className="bg-[#1B4D3E] py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center gap-8 md:flex-row md:justify-between">
-            <div className="flex items-center gap-4 text-white">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
-                <Phone className="h-6 w-6 text-[#D4A373]" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-300">Call us</p>
-                <p className="font-semibold">+254 700 000 000</p>
-              </div>
-            </div>
-
             <div className="flex items-center gap-4 text-white">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
                 <Mail className="h-6 w-6 text-[#D4A373]" />

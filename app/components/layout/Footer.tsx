@@ -11,7 +11,6 @@ import {
   Linkedin,
   Send,
   MapPin,
-  Phone,
   Mail,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -25,10 +24,10 @@ const quickLinks = [
 ];
 
 const propertyTypes = [
-  { href: "/properties?type=BEDSITTER", label: "Bedsitters" },
-  { href: "/properties?type=ONE_BEDROOM", label: "1 Bedroom" },
-  { href: "/properties?type=TWO_BEDROOM", label: "2 Bedroom" },
-  { href: "/properties?type=THREE_BEDROOM", label: "3 Bedroom" },
+  { href: "/properties?propertyType=SINGLE_ROOM", label: "Single Rooms" },
+  { href: "/properties?propertyType=BEDSITTER", label: "Bedsitters" },
+  { href: "/properties?propertyType=ONE_BEDROOM", label: "1 Bedroom" },
+  { href: "/properties?propertyType=TWO_BEDROOM", label: "2 Bedroom" },
 ];
 
 const socialLinks = [
@@ -153,11 +152,7 @@ export function Footer() {
             <ul className="space-y-4 text-sm text-gray-300">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 flex-shrink-0 text-[#D4A373]" />
-                <span>Westlands, Nairobi, Kenya</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="h-5 w-5 flex-shrink-0 text-[#D4A373]" />
-                <span>+254 700 000 000</span>
+                <span>Nairobi, Kenya</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 flex-shrink-0 text-[#D4A373]" />

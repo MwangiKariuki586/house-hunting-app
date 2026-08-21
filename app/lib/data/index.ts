@@ -5,10 +5,6 @@
  * This makes imports cleaner and easier to manage.
  */
 
-// Featured properties for homepage
-export { featuredProperties } from "./featured-properties";
-export type { FeaturedProperty } from "./featured-properties";
-
 // Homepage static content
-export { services, stats, whyChooseUs } from "./homepage-constants";
-export type { Service, Stat, WhyChooseUsItem } from "./homepage-constants";
+export { services, whyChooseUs } from "./homepage-constants";
+export type { Service, WhyChooseUsItem } from "./homepage-constants";

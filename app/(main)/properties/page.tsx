@@ -25,17 +25,27 @@ import {
 } from "@/app/components/ui/select";
 import { PropertyCard } from "@/app/components/cards/PropertyCard";
 import { cn, propertyTypeLabels, buildingTypeLabels } from "@/app/lib/utils";
-import { kenyanAreas } from "@/app/lib/validations/listing";
+import { areasByCounty, kenyanAreas, kenyanCounties } from "@/app/lib/validations/listing";
+
+const priceBands = [
+  { label: "Under 10K", min: "", max: "10000" },
+  { label: "10K–15K", min: "10000", max: "15000" },
+  { label: "15K–25K", min: "15000", max: "25000" },
+  { label: "25K–40K", min: "25000", max: "40000" },
+  { label: "40K+", min: "40000", max: "" },
+];
 
 interface Listing {
   id: string;
   title: string;
+  county: string;
   area: string;
   estate: string | null;
   propertyType: string;
   monthlyRent: number;
   bedrooms: number;
   bathrooms: number;
+  floorAreaSqM: number | null;
   parking: boolean;
   parkingSpaces: number;
   photos: { url: string; isMain: boolean }[];
@@ -65,6 +75,7 @@ export default function PropertiesPage() {
   );
 
   // Filter states
+  const [county, setCounty] = React.useState(searchParams.get("county") || "");
   const [area, setArea] = React.useState(searchParams.get("area") || "");
   const [propertyType, setPropertyType] = React.useState(
     searchParams.get("propertyType") || ""
@@ -116,6 +127,7 @@ export default function PropertiesPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
+      if (county) params.set("county", county);
       if (area) params.set("area", area);
       if (propertyType) params.set("propertyType", propertyType);
       if (buildingType) params.set("buildingType", buildingType);
@@ -146,6 +158,7 @@ export default function PropertiesPage() {
       setIsLoading(false);
     }
   }, [
+    county,
     area,
     propertyType,
     buildingType,
@@ -167,10 +180,11 @@ export default function PropertiesPage() {
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [area, propertyType, buildingType, debouncedMinPrice, debouncedMaxPrice, verifiedOnly, parking, petsAllowed, furnished, gatedCommunity, sortBy]);
+  }, [county, area, propertyType, buildingType, debouncedMinPrice, debouncedMaxPrice, verifiedOnly, parking, petsAllowed, furnished, gatedCommunity, sortBy]);
 
   const applyFilters = () => {
     const params = new URLSearchParams();
+    if (county) params.set("county", county);
     if (area) params.set("area", area);
     if (propertyType) params.set("propertyType", propertyType);
     if (buildingType) params.set("buildingType", buildingType);
@@ -188,6 +202,7 @@ export default function PropertiesPage() {
   };
 
   const clearFilters = () => {
+    setCounty("");
     setArea("");
     setPropertyType("");
     setBuildingType("");
@@ -203,6 +218,7 @@ export default function PropertiesPage() {
   };
 
   const activeFiltersCount = [
+    county,
     area,
     propertyType,
     buildingType,
@@ -214,6 +230,15 @@ export default function PropertiesPage() {
     furnished,
     gatedCommunity,
   ].filter(Boolean).length;
+
+  const availableAreas = county
+    ? [...(areasByCounty[county as keyof typeof areasByCounty] ?? [])]
+    : kenyanAreas;
+
+  const applyPriceBand = (min: string, max: string) => {
+    setMinPrice(min);
+    setMaxPrice(max);
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
@@ -282,7 +307,17 @@ export default function PropertiesPage() {
               </div>
 
               <div className="space-y-6">
-                {/* Location */}
+                {/* County and locality */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">County</label>
+                  <Select value={county || "all"} onValueChange={(val) => { setCounty(val === "all" ? "" : val); setArea(""); }}>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="All counties" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All counties</SelectItem>
+                      {kenyanCounties.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location
@@ -293,7 +328,7 @@ export default function PropertiesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All areas</SelectItem>
-                      {kenyanAreas.map((a) => (
+                      {availableAreas.map((a) => (
                         <SelectItem key={a} value={a}>
                           {a}
                         </SelectItem>
@@ -366,6 +401,13 @@ export default function PropertiesPage() {
                       onChange={(e) => setMaxPrice(e.target.value)}
                       className="rounded-xl"
                     />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {priceBands.map((band) => (
+                      <button key={band.label} type="button" onClick={() => applyPriceBand(band.min, band.max)} className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:border-[#1B4D3E] hover:text-[#1B4D3E]">
+                        {band.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -620,7 +662,17 @@ export default function PropertiesPage() {
             </div>
 
             <div className="space-y-6">
-              {/* Location */}
+              {/* County and locality */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">County</label>
+                <Select value={county || "all"} onValueChange={(val) => { setCounty(val === "all" ? "" : val); setArea(""); }}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="All counties" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All counties</SelectItem>
+                    {kenyanCounties.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Location
@@ -631,7 +683,7 @@ export default function PropertiesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All areas</SelectItem>
-                    {kenyanAreas.map((a) => (
+                    {availableAreas.map((a) => (
                       <SelectItem key={a} value={a}>
                         {a}
                       </SelectItem>
@@ -682,6 +734,13 @@ export default function PropertiesPage() {
                     onChange={(e) => setMaxPrice(e.target.value)}
                     className="rounded-xl"
                   />
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {priceBands.map((band) => (
+                    <button key={band.label} type="button" onClick={() => applyPriceBand(band.min, band.max)} className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:border-[#1B4D3E] hover:text-[#1B4D3E]">
+                      {band.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

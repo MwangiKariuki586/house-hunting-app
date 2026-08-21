@@ -51,7 +51,8 @@ import {
 } from "@/app/lib/utils";
 import {
   createListingSchema,
-  kenyanAreas,
+  areasByCounty,
+  kenyanCounties,
   amenitiesList,
 } from "@/app/lib/validations/listing";
 
@@ -85,6 +86,7 @@ export default function CreateListingPage() {
   const [phoneVerificationRequired, setPhoneVerificationRequired] = React.useState(false);
   // Local photos stored as File objects until submission
   const [localPhotos, setLocalPhotos] = React.useState<LocalPhoto[]>([]);
+  const localPhotosRef = React.useRef<LocalPhoto[]>([]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState<string>("");
   const [showDraftPrompt, setShowDraftPrompt] = React.useState(false);
@@ -105,6 +107,7 @@ export default function CreateListingPage() {
   type FormData = {
     title: string;
     description: string;
+    county: string;
     area: string;
     estate: string;
     landmark: string;
@@ -115,6 +118,7 @@ export default function CreateListingPage() {
     buildingType: string;
     bedrooms: number;
     bathrooms: number;
+    floorAreaSqM: number | undefined;
     monthlyRent: number;
     deposit: number;
     serviceCharge: number;
@@ -146,6 +150,7 @@ export default function CreateListingPage() {
     defaultValues: {
       title: "",
       description: "",
+      county: "Nairobi",
       area: "",
       estate: "",
       landmark: "",
@@ -156,6 +161,7 @@ export default function CreateListingPage() {
       buildingType: "APARTMENT",
       bedrooms: 1,
       bathrooms: 1,
+      floorAreaSqM: undefined,
       monthlyRent: 0,
       deposit: 0,
       serviceCharge: 0,
@@ -334,10 +340,14 @@ export default function CreateListingPage() {
     );
   };
 
+  React.useEffect(() => {
+    localPhotosRef.current = localPhotos;
+  }, [localPhotos]);
+
   // Clean up preview URLs on unmount
   React.useEffect(() => {
     return () => {
-      localPhotos.forEach(photo => {
+      localPhotosRef.current.forEach(photo => {
         URL.revokeObjectURL(photo.previewUrl);
       });
     };
@@ -748,6 +758,14 @@ export default function CreateListingPage() {
                   {...register("bathrooms", { valueAsNumber: true })}
                 />
               </div>
+
+              <Input
+                label="Floor Area (m², optional)"
+                type="number"
+                min={5}
+                placeholder="Only enter this when measured"
+                {...register("floorAreaSqM", { valueAsNumber: true })}
+              />
             </CardContent>
           </Card>
         )}
@@ -762,6 +780,26 @@ export default function CreateListingPage() {
             <CardContent className="space-y-6">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  County *
+                </label>
+                <Select
+                  value={watch("county")}
+                  onValueChange={(value) => {
+                    setValue("county", value);
+                    setValue("area", "");
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+                  <SelectContent>
+                    {kenyanCounties.map((county) => (
+                      <SelectItem key={county} value={county}>{county}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Area / Neighborhood *
                 </label>
                 <Select
@@ -772,7 +810,7 @@ export default function CreateListingPage() {
                     <SelectValue placeholder="Select area" />
                   </SelectTrigger>
                   <SelectContent>
-                    {kenyanAreas.map((area) => (
+                  {[...(areasByCounty[watch("county") as keyof typeof areasByCounty] ?? [])].map((area) => (
                       <SelectItem key={area} value={area}>
                         {area}
                       </SelectItem>
